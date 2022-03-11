@@ -1,0 +1,2 @@
+# AdminProgram
+This is diplom.)))
