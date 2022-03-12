@@ -1,0 +1,96 @@
+﻿<Window x:Class="AdminProgram.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AdminProgram"
+        xmlns:viewModels="clr-namespace:AdminProgram.ViewModels"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="800" Width="1500"
+        KeyDown="MainWindow_OnKeyDown">
+    <Window.DataContext>
+        <viewModels:HostViewModel />
+    </Window.DataContext>
+    <Window.Resources>
+        <Style TargetType="Grid" BasedOn="{StaticResource Window}" />
+        <Style TargetType="ListView" BasedOn="{StaticResource Window}">
+            <Setter Property="Margin" Value="20 1 20 10" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{StaticResource GrayViolet}" />
+        </Style>
+    </Window.Resources>
+    <Grid MinWidth="1000">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="0.1*" MinHeight="75" />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Button x:Name="ScanButton"
+                Style="{StaticResource {x:Type Button}}"
+                Content="{Binding IsScanButtonEnabled, Converter={StaticResource ScanButtonText}}"
+                IsEnabled="{Binding IsScanButtonEnabled}"
+                Click="ScanButton_OnClick"/>
+        <Button Grid.Row="0" Grid.Column="1" 
+                x:Name="RefreshAllButton"
+                Style="{StaticResource {x:Type Button}}"
+                Content="{Binding IsRefreshButtonEnabled, Converter={StaticResource RefreshButtonText}}"
+                IsEnabled="{Binding IsRefreshButtonEnabled}"
+                Click="RefreshAllButton_OnClick"/>
+        <TextBox Grid.Row="0" Grid.Column="2" 
+                 x:Name="SearchBox" 
+                 Style="{StaticResource SearchBox}"
+                 TextChanged="SearchBox_OnTextChanged" />
+        <Label Grid.Row="0" Grid.Column="2" 
+               x:Name="SearchLabel"
+               Target="{x:Reference SearchBox}"
+               Style="{StaticResource SearchEmpty}"
+               Cursor="IBeam"
+               MouseLeftButtonUp="SearchLabel_OnMouseLeftButtonUp" />
+        <ListBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" 
+                 ItemsSource="{Binding Hosts}" 
+                 SelectedItem="{Binding SelectedHost}"
+                 Style="{StaticResource Window}"
+                 SelectionChanged="HostList_OnSelectionChanged"
+                 Margin="10">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource HostPanel}" Text="{Binding Path=Name}" />
+                        <TextBlock Style="{StaticResource HostPanel}" Text="{Binding Path=IpAddress}" />
+                        <TextBlock Style="{StaticResource HostPanel}" Text="{Binding Path=MacAddress}" />
+                        <Ellipse Style="{StaticResource {x:Type Ellipse}}" 
+                                 Fill="{Binding Status, Converter={StaticResource EllipseColor}}" />
+                        <TextBlock Style="{StaticResource HostPanel}" 
+                                   Text="{Binding Status, Converter={StaticResource StatusText}}" />
+                    </StackPanel> 
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <StackPanel x:Name="RightPanel" Grid.Row="1" Grid.Column="2" Style="{StaticResource RightPanel}">
+            <TextBlock Style="{StaticResource HostPanel}" 
+                       Text="{Binding Path=SelectedHost.Name, StringFormat='Имя: {0}'}" />
+            <TextBlock Style="{StaticResource HostPanel}" 
+                       Text="{Binding Path=SelectedHost.IpAddress, StringFormat='IP-адрес: {0}'}" />
+            <TextBlock Style="{StaticResource HostPanel}" 
+                       Text="{Binding Path=SelectedHost.MacAddress, StringFormat='MAC-адрес: {0}'}" />
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Style="{StaticResource HostPanel}" Text="Статус:" />
+                <Ellipse Style="{StaticResource {x:Type Ellipse}}" 
+                         Fill="{Binding SelectedHost.Status, Converter={StaticResource EllipseColor}}" />
+                <TextBlock Style="{StaticResource HostPanel}" 
+                           Text="{Binding SelectedHost.Status, Converter={StaticResource StatusText}}" />
+            </StackPanel>
+            <Button Style="{StaticResource {x:Type Button}}"
+                    Content="{Binding SelectedHost.Status, Converter={StaticResource PowerOnButtonText}}"
+                    IsEnabled="{Binding SelectedHost.Status}"
+                    Click="PowerButton_OnClick" />
+            <Button Style="{StaticResource {x:Type Button}}"
+                    Content="Обновить статус"
+                    Click="RefreshButton_OnClick"/>
+        </StackPanel>
+    </Grid>
+</Window>
