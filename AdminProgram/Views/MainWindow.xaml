@@ -16,7 +16,7 @@
         <Style TargetType="ListView" BasedOn="{StaticResource Window}">
             <Setter Property="Margin" Value="20 1 20 10" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{StaticResource GrayViolet}" />
+            <Setter Property="BorderBrush" Value="{StaticResource SmokeWhite}" />
         </Style>
     </Window.Resources>
     <Grid MinWidth="1000">

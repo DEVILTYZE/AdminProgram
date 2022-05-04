@@ -1,0 +1,5 @@
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\CommandLib\obj\Release\net5.0\CommandLib.csproj.AssemblyReference.cache
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\CommandLib\obj\Release\net5.0\CommandLib.GeneratedMSBuildEditorConfig.editorconfig
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\CommandLib\obj\Release\net5.0\CommandLib.AssemblyInfoInputs.cache
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\CommandLib\obj\Release\net5.0\CommandLib.AssemblyInfo.cs
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\CommandLib\obj\Release\net5.0\CommandLib.csproj.CoreCompileInputs.cache

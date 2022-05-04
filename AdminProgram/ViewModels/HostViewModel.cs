@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Data.Entity;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -19,49 +17,8 @@ using AdminProgram.Models;
 
 namespace AdminProgram.ViewModels
 {
-    public sealed class HostViewModel : INotifyPropertyChanged
+    public sealed partial class HostViewModel
     {
-        private readonly object _locker = new();
-        private readonly IPHostEntry _currentHost;
-        private readonly ThreadList[] _threads = new ThreadList[2];
-        
-        private Dictionary<string, string> _addresses;
-        private Host _selectedHost;
-        private AdminContext _db;
-        private bool _isScanButtonEnabled, _isRefreshButtonEnabled;
-        
-        public ObservableCollection<Host> Hosts { get; set; }
-        
-        public bool IsScanButtonEnabled 
-        { 
-            get => _isScanButtonEnabled;
-            set
-            {
-                _isScanButtonEnabled = value;
-                OnPropertyChanged(nameof(IsScanButtonEnabled));
-            } 
-        }
-
-        public bool IsRefreshButtonEnabled
-        {
-            get => _isRefreshButtonEnabled;
-            set
-            {
-                _isRefreshButtonEnabled = value;
-                OnPropertyChanged(nameof(IsRefreshButtonEnabled));
-            }
-        }
-        
-        public Host SelectedHost
-        {
-            get => _selectedHost;
-            set
-            {
-                _selectedHost = value;
-                OnPropertyChanged(nameof(SelectedHost));
-            }
-        }
-
         public HostViewModel()
         {
             InitializeDb();
@@ -80,7 +37,8 @@ namespace AdminProgram.ViewModels
             if (_currentHost is null)
                 return false;
 
-            _threads[0] = new ThreadList(this);
+            IsScanButtonEnabled = false;
+            _threads[0] = new ThreadList();
             
             foreach (var ipAddress in _addresses)
             {
@@ -96,7 +54,8 @@ namespace AdminProgram.ViewModels
 
         public void Refresh()
         {
-            _threads[1] = new ThreadList(this);
+            IsRefreshButtonEnabled = false;
+            _threads[1] = new ThreadList();
             
             foreach (var host in Hosts)
             {
@@ -128,10 +87,7 @@ namespace AdminProgram.ViewModels
             {
                 client.Send(magicPacket, magicPacket.Length, new IPEndPoint(IPAddress.Broadcast, NetHelper.Port));
             }
-            catch (SocketException)
-            {
-                return false;
-            }
+            catch (SocketException) { return false; }
 
             return true;
         }
@@ -154,17 +110,7 @@ namespace AdminProgram.ViewModels
             {
                 return shutdownProcess.Start();
             }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-        
-        public event PropertyChangedEventHandler PropertyChanged;
-        [NotifyPropertyChangedInvocator]
-        private void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            catch (Exception) { return false; }
         }
 
         private void AddHost([NotNull] object obj)
@@ -176,10 +122,7 @@ namespace AdminProgram.ViewModels
             {
                 hostEntry = Dns.GetHostEntry(ip);
             }
-            catch (SocketException)
-            {
-                return;
-            }
+            catch (SocketException) { return; }
             
             var host = new Host(hostEntry.HostName, ip, mac) { Status = NetHelper.Ping(ip) };
 
@@ -187,19 +130,36 @@ namespace AdminProgram.ViewModels
             {
                 Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    if (Hosts.Any(thisHost => string.CompareOrdinal(host.IpAddress, thisHost.IpAddress) == 0))
-                        return;
+                    var hostInHosts = Hosts.FirstOrDefault(thisHost =>
+                        string.CompareOrdinal(host.MacAddress, thisHost.MacAddress) == 0);
 
-                    _db.Hosts.Add(new HostDb
+                    if (hostInHosts is null) 
                     {
-                        Name = host.Name,
-                        IpAddress = host.IpAddress,
-                        MacAddress = host.MacAddress
-                    });
-                    _db.SaveChanges();
+                        Hosts.Add(host);
+                        OnPropertyChanged(nameof(Hosts));
+                        
+                        _db.Hosts.Add(new HostDb
+                        {
+                            Name = host.Name,
+                            IpAddress = host.IpAddress,
+                            MacAddress = host.MacAddress
+                        });
+                    }
+                    else if (string.CompareOrdinal(host.IpAddress, hostInHosts.IpAddress) != 0 ||
+                        string.CompareOrdinal(host.Name, hostInHosts.Name) != 0)
+                    {
+                        var hostInDb = _db.Hosts.ToList().FirstOrDefault(thisHost => 
+                            string.CompareOrdinal(host.MacAddress, thisHost.MacAddress) == 0);
+
+                        if (hostInDb is null)
+                            return;
+                        
+                        hostInDb.Name = hostInHosts.Name = host.Name;
+                        hostInDb.IpAddress = hostInHosts.IpAddress = host.IpAddress;
+                        _db.Entry(hostInDb).State = EntityState.Modified;
+                    }
                     
-                    Hosts.Add(host);
-                    OnPropertyChanged(nameof(Hosts));
+                    _db.SaveChanges();
                 }));
             }
         }
@@ -243,6 +203,24 @@ namespace AdminProgram.ViewModels
             Refresh();
         }
 
-        private void WaitThreads(bool isScan) => _threads[isScan ? 0 : 1].WaitAllThreads(isScan);
+        private void WaitThreads(bool isScan)
+        {
+            var thread = new Thread(WaitThreads);
+            thread.Start(isScan);
+        }
+
+        private void WaitThreads([CanBeNull] object obj)
+        {
+            if (obj is null)
+                return;
+
+            var isScan = (bool)obj;
+            _threads[isScan ? 0 : 1].WaitThreads();
+            
+            if (isScan) 
+                IsScanButtonEnabled = true;
+            else 
+                IsRefreshButtonEnabled = true;
+        }
     }
 }

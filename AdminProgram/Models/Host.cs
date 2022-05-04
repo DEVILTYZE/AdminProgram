@@ -16,15 +16,14 @@ namespace AdminProgram.Models
 
     public sealed class Host : INotifyPropertyChanged
     {
-        private readonly string _name;
-        private readonly string _ipAddress;
+        private string _name, _ipAddress;
         private readonly string _macAddress;
         private HostStatus _status;
         
         public string Name
         {
             get => _name;
-            init
+            set
             {
                 if (string.IsNullOrEmpty(value) || string.IsNullOrWhiteSpace(value))
                     throw new ArgumentNullException(value, "Value is null");
@@ -37,7 +36,7 @@ namespace AdminProgram.Models
         public string IpAddress
         {
             get => _ipAddress;
-            init
+            set
             {
                 if (string.IsNullOrEmpty(value) || string.IsNullOrWhiteSpace(value))
                     throw new ArgumentNullException(value, "Value is null");

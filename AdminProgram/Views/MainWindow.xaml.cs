@@ -20,7 +20,7 @@ namespace AdminProgram.Views
         {
             InitializeComponent();
             
-            DataContext = _model = new HostViewModel();
+            _model = (HostViewModel)DataContext;
             Scan(_model);
         }
 
@@ -71,7 +71,6 @@ namespace AdminProgram.Views
 
         private void RefreshAllButton_OnClick(object sender, RoutedEventArgs e)
         {
-            _model.IsRefreshButtonEnabled = false;
             _model.Refresh();
         }
 
@@ -81,7 +80,6 @@ namespace AdminProgram.Views
         {
             if (e.Key == Key.F6 && RefreshAllButton.IsEnabled)
             {
-                _model.IsRefreshButtonEnabled = false;
                 _model.Refresh();
                 return;
             }
@@ -89,7 +87,6 @@ namespace AdminProgram.Views
             if (e.Key != Key.F5 || !ScanButton.IsEnabled) 
                 return;
             
-            _model.IsScanButtonEnabled = false;
             _model.Scan();
         }
     }

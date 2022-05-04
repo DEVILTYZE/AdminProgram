@@ -7,7 +7,7 @@ namespace AdminProgram.Helpers
 {
     public static class NetHelper
     {
-        public const int Port = 1900;
+        public const int Port = 4022;
         
         public static byte[] GetMagicPacket(string mac)
         {

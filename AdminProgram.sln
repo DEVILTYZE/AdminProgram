@@ -2,6 +2,10 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminProgram", "AdminProgram\AdminProgram.csproj", "{649697F9-EF64-4FB1-A320-A57ED1DFA692}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminProgramHost", "AdminProgramHost\AdminProgramHost.csproj", "{17824DDD-19D6-4357-9009-3DF68C3F0642}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommandLib", "CommandLib\CommandLib.csproj", "{28B26335-3CD6-42B3-9CE0-6DC37EA06572}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +16,13 @@ Global
 		{649697F9-EF64-4FB1-A320-A57ED1DFA692}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{649697F9-EF64-4FB1-A320-A57ED1DFA692}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{649697F9-EF64-4FB1-A320-A57ED1DFA692}.Release|Any CPU.Build.0 = Release|Any CPU
+		{17824DDD-19D6-4357-9009-3DF68C3F0642}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{17824DDD-19D6-4357-9009-3DF68C3F0642}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{17824DDD-19D6-4357-9009-3DF68C3F0642}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{17824DDD-19D6-4357-9009-3DF68C3F0642}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28B26335-3CD6-42B3-9CE0-6DC37EA06572}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28B26335-3CD6-42B3-9CE0-6DC37EA06572}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28B26335-3CD6-42B3-9CE0-6DC37EA06572}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28B26335-3CD6-42B3-9CE0-6DC37EA06572}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

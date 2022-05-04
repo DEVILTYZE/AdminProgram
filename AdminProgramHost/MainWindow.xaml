@@ -1,0 +1,19 @@
+﻿<Window x:Class="AdminProgramHost.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AdminProgramHost"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="600" Width="400">
+    <Window.DataContext>
+        <local:Host />
+    </Window.DataContext>
+    <Grid>
+        <StackPanel>
+            <TextBlock Text="{Binding Name, StringFormat='Имя ПК: {0}'}"></TextBlock>
+            <TextBlock Text="{Binding IpAddress, StringFormat='IP-адрес: {0}'}"></TextBlock>
+            <TextBlock Text="{Binding MacAddress, StringFormat='MAC-адрес: {0}'}"></TextBlock>
+        </StackPanel>
+    </Grid>
+</Window>
