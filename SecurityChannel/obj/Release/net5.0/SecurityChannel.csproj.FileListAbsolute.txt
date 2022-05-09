@@ -1,0 +1,12 @@
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\SecurityChannel\bin\Release\net5.0\SecurityChannel.deps.json
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\SecurityChannel\bin\Release\net5.0\SecurityChannel.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\SecurityChannel\bin\Release\net5.0\ref\SecurityChannel.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\SecurityChannel\bin\Release\net5.0\SecurityChannel.pdb
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\SecurityChannel\obj\Release\net5.0\SecurityChannel.csproj.AssemblyReference.cache
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\SecurityChannel\obj\Release\net5.0\SecurityChannel.GeneratedMSBuildEditorConfig.editorconfig
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\SecurityChannel\obj\Release\net5.0\SecurityChannel.AssemblyInfoInputs.cache
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\SecurityChannel\obj\Release\net5.0\SecurityChannel.AssemblyInfo.cs
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\SecurityChannel\obj\Release\net5.0\SecurityChannel.csproj.CoreCompileInputs.cache
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\SecurityChannel\obj\Release\net5.0\SecurityChannel.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\SecurityChannel\obj\Release\net5.0\ref\SecurityChannel.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\SecurityChannel\obj\Release\net5.0\SecurityChannel.pdb

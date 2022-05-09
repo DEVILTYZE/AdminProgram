@@ -5,15 +5,18 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AdminProgramHost"
         mc:Ignorable="d"
-        Title="MainWindow" Height="600" Width="400">
+        Title="MainWindow" Height="400" Width="400"
+        Closed="MainWindow_OnClosed"
+        Visibility="Hidden"
+        ShowInTaskbar="False">
     <Window.DataContext>
         <local:Host />
     </Window.DataContext>
     <Grid>
         <StackPanel>
-            <TextBlock Text="{Binding Name, StringFormat='Имя ПК: {0}'}"></TextBlock>
-            <TextBlock Text="{Binding IpAddress, StringFormat='IP-адрес: {0}'}"></TextBlock>
-            <TextBlock Text="{Binding MacAddress, StringFormat='MAC-адрес: {0}'}"></TextBlock>
+            <TextBlock Text="{Binding Name, StringFormat='Имя ПК: {0}'}" />
+            <TextBlock Text="{Binding IpAddress, StringFormat='IP-адрес: {0}'}" />
+            <TextBlock Text="{Binding MacAddress, StringFormat='MAC-адрес: {0}'}" />
         </StackPanel>
     </Grid>
 </Window>

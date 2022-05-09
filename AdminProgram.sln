@@ -6,6 +6,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminProgramHost", "AdminPr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommandLib", "CommandLib\CommandLib.csproj", "{28B26335-3CD6-42B3-9CE0-6DC37EA06572}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecurityChannel", "SecurityChannel\SecurityChannel.csproj", "{7904CADF-B4EC-415D-B875-70F565CCA083}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{7D6D210D-46B2-45CC-A014-B79E928B831C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +28,13 @@ Global
 		{28B26335-3CD6-42B3-9CE0-6DC37EA06572}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{28B26335-3CD6-42B3-9CE0-6DC37EA06572}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{28B26335-3CD6-42B3-9CE0-6DC37EA06572}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7904CADF-B4EC-415D-B875-70F565CCA083}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7904CADF-B4EC-415D-B875-70F565CCA083}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7904CADF-B4EC-415D-B875-70F565CCA083}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7904CADF-B4EC-415D-B875-70F565CCA083}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D6D210D-46B2-45CC-A014-B79E928B831C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D6D210D-46B2-45CC-A014-B79E928B831C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D6D210D-46B2-45CC-A014-B79E928B831C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D6D210D-46B2-45CC-A014-B79E928B831C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

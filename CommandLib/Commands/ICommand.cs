@@ -1,9 +1,8 @@
-﻿using CommandLib.Annotations;
-
-namespace CommandLib.Commands
+﻿namespace CommandLib.Commands
 {
     public interface ICommand
     {
-        CommandResult Execute([CanBeNull]object data);
+        CommandResult Execute();
+        byte[] ToBytes();
     }
 }

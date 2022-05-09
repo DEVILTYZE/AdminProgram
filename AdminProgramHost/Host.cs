@@ -1,67 +1,28 @@
 ﻿using System;
-using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Runtime.CompilerServices;
+using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
-using AdminProgramHost.Annotations;
-using CommandLib;
+using CommandLib.Commands;
+using Microsoft.Win32;
 
 namespace AdminProgramHost
 {
-    public sealed class Host : INotifyPropertyChanged
+    public sealed partial class Host
     {
-        private const int Port = 8001;
-        private static readonly string MacTxtPath = Environment.SpecialFolder.UserProfile + "\\mac.txt";
-
-        private string _name;
-        private string _ipAddress;
-        private string _macAddress;
-        private Thread _thread;
-
-        public string Name
+        public Host()
         {
-            get => _name;
-            set
-            {
-                _name = value;
-                OnPropertyChanged(nameof(Name));
-            }
-        }
-        
-        public string IpAddress
-        {
-            get => _ipAddress;
-            set
-            {
-                _ipAddress = value;
-                OnPropertyChanged(nameof(IpAddress));
-            }
-        }
-        
-        public string MacAddress
-        {
-            get => _macAddress;
-            set
-            {
-                _macAddress = value;
-                OnPropertyChanged(nameof(MacAddress));
-            }
+            SetAutorunValue(true);
+            SetStartInfo();
         }
 
-        public Host() => SetStartInfo();
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        [NotifyPropertyChangedInvocator]
-        private void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+        public void WaitThread() => _threadReceiveData.Join();
 
         private void SetStartInfo()
         {
@@ -75,28 +36,28 @@ namespace AdminProgramHost
 
             MacAddress = GetMacAddress();
             
-            if (!File.Exists(MacTxtPath))
-            {
-                var client = new UdpClient(Port);
+            // if (!File.Exists(MacDatPath))
+            // {
+            //     var client = new UdpClient(Port);
+            //
+            //     try
+            //     {
+            //         var mac = ReceiveData(client);
+            //
+            //         using var sw = new StreamWriter(MacDatPath, false);
+            //         sw.Write(mac);
+            //     }
+            //     finally
+            //     {
+            //         client.Close();
+            //     }
+            // }
 
-                try
-                {
-                    var mac = ReceiveData(client);
-
-                    using var sw = new StreamWriter(MacTxtPath, false);
-                    sw.Write(mac);
-                }
-                finally
-                {
-                    client.Close();
-                }
-            }
-
-            if (_thread.IsAlive)
-                _thread.Join();
+            if (_threadReceiveData.IsAlive)
+                _threadReceiveData.Join();
             
-            _thread = new Thread(OpenClient);
-            _thread.Start();
+            _threadReceiveData = new Thread(OpenClient);
+            _threadReceiveData.Start();
         }
 
         private static string GetMacAddress()
@@ -124,26 +85,26 @@ namespace AdminProgramHost
 
             try
             {
+                var remoteIp = GetEndPoint();
+                
                 while (true)
                 {
-                    string data;
-                
-                    do
-                    { 
-                        data = ReceiveData(client);
-                    } 
-                    while (!IsRightServer(data));
+                    var data = ReceiveData(client, remoteIp);
+                    var command = AbstractCommand.FromBytes(Encoding.UTF8.GetBytes(data));
 
-                    data = ReceiveData(client);
-                    var result = CommandAnalyzer.ExecuteCommand(int.Parse(data), MacAddress);
-                    var resultBytes = result.ToBytes();
-                    
-                    client.Send(resultBytes, resultBytes.Length);
-                    
+                    if (command is MessageCommand { IsSystem: true })
+                        SetMacAddress(command.Execute());
+
+                    var resultBytes = command.Execute().ToBytes();
+                    client.Send(resultBytes, resultBytes.Length, remoteIp);
+
                     // TODO: Добавить шифрование...
                 }
             }
-            catch (Exception) { restart = true; }
+            catch (Exception)
+            {
+                restart = true;
+            }
             finally
             {
                 client.Close();
@@ -160,28 +121,70 @@ namespace AdminProgramHost
         /// Метод получения данных по UDP клиенту.
         /// </summary>
         /// <param name="client">UDP-клиент.</param>
-        /// <param name="isVerifying">Параметр проверки. True — если проверка сервера. False — если получение данных</param>
+        /// <param name="remoteIp">Конечная точка принятия данных.</param>
         /// <returns>Переданные данные в виде строки.</returns>
-        private static string ReceiveData(UdpClient client)
+        private static string ReceiveData(UdpClient client, IPEndPoint remoteIp)
         {
-            IPEndPoint remoteIp = null;
             var data = client.Receive(ref remoteIp);
-            var dataString = Encoding.Default.GetString(data);
+            var dataString = Encoding.UTF8.GetString(data);
             
             return dataString;
         }
 
-        /// <summary>
-        /// Метод нахождения верного сервера.
-        /// </summary>
-        /// <param name="data">MAC-адрес.</param>
-        /// <returns>True или False.</returns>
-        private static bool IsRightServer(string data)
+        private void SetMacAddress(CommandResult commandResult)
         {
-            using var sr = new StreamReader(MacTxtPath);
-            var mac = sr.ReadToEnd();
+            if (commandResult.Data is null || commandResult.Status == CommandResultStatus.Failed)
+                return;
 
-            return string.CompareOrdinal(data, mac) == 0;
+            _mainMacAddress = (string)commandResult.Data;
+
+            using var sw = new StreamWriter(MacDatPath, false);
+            sw.Write(_mainMacAddress);
+        }
+
+        private IPEndPoint GetEndPoint()
+        {
+            var arpProcess = new Process
+            {
+                StartInfo =
+                {
+                    FileName = "arp",
+                    Arguments = "-a | find \"" + _mainMacAddress + '\"',
+                    StandardOutputEncoding = Encoding.UTF8,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                }
+            };
+            
+            var cmdOutput = arpProcess.StandardOutput.ReadToEnd();
+            const string pattern = @"([1-2][0-5]*\.?){4}";
+
+            var match = Regex.Match(cmdOutput, pattern);
+            return new IPEndPoint(IPAddress.Parse(match.Value), Port);
+        }
+
+        private bool SetAutorunValue(bool isAutorun)
+        {
+            var path = Assembly.GetExecutingAssembly().Location;
+            var reg = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run\");
+
+            if (reg is null)
+                return false;
+
+            try
+            {
+                if (isAutorun)
+                    reg.SetValue(Name + "Program", path);
+                else
+                    reg.DeleteValue(Name + "Program");
+            }
+            catch
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

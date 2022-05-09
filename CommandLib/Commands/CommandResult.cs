@@ -14,14 +14,15 @@ namespace CommandLib.Commands
     }
     
     [Serializable]
-    public class CommandResult
+    public class CommandResult : ISendable
     {
-        public CommandResultStatus Result { get; }
+        public CommandResultStatus Status { get; }
         public object Data { get; }
+        public int PublicKey { get; set; }
 
-        public CommandResult(CommandResultStatus result, [CanBeNull]object data)
+        public CommandResult(CommandResultStatus status, [CanBeNull]object data)
         {
-            Result = result;
+            Status = status;
             Data = data;
         }
 

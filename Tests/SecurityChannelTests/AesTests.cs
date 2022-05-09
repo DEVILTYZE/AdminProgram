@@ -1,0 +1,40 @@
+﻿using System;
+using System.Text;
+using NUnit.Framework;
+using SecurityChannel;
+
+namespace Tests.SecurityChannelTests
+{
+    public class AesTests
+    {
+        [SetUp]
+        public void Setup() { }
+
+        [Test]
+        public void EncryptInputDataNullTest()
+            => Assert.Catch(() => AesEngine.Encrypt(null, null));
+        
+        [Test]
+        public void EncryptInputDataZeroLengthTest()
+            => Assert.Catch(() => AesEngine.Encrypt(Array.Empty<byte>(), Array.Empty<byte>()));
+
+        [Test]
+        public void DecryptInputDataNullTest()
+            => Assert.Catch(() => AesEngine.Decrypt(null, null));
+        
+        [Test]
+        public void DecryptInputDataZeroLengthTest()
+            => Assert.Catch(() => AesEngine.Decrypt(Array.Empty<byte>(), Array.Empty<byte>()));
+
+        [Test]
+        public void InputDataTest()
+        {
+            const string str = "EnCrYpT mE!!1!";
+            var data = Encoding.UTF8.GetBytes(str);
+            var key = AesEngine.GetKey();
+            var encrypted = AesEngine.Encrypt(data, key);
+            
+            Assert.AreEqual(str, Encoding.UTF8.GetString(AesEngine.Decrypt(encrypted, key)));
+        }
+    }
+}

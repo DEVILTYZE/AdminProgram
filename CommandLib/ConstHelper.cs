@@ -2,9 +2,15 @@
 {
     public static class ConstHelper
     {
-        public const int GetMessageCommandId = 0;
+        public const int MessageCommandId = 0;
+        public const int ShutdownCommandId = 1;
+        public const int GetFileCommandId = 2;
+        public const int StreamCommandId = 3;
         
-        public const string GetMessageCommandString = "GET_MESSAGE";
+        public const string MessageCommandString = "GET_MESSAGE";
+        public const string ShutdownCommandString = "SHUTDOWN";
+        public const string GetFileCommandString = "GET_FILE";
+        public const string StreamCommandString = "STREAM";
         //public static byte[] Separator = { byte.MaxValue, byte.MaxValue, byte.MinValue, byte.MaxValue, byte.MinValue };
     }
 }
