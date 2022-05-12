@@ -14,6 +14,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\CommandLib\CommandLib.csproj" />
       <ProjectReference Include="..\SecurityChannel\SecurityChannel.csproj" />
     </ItemGroup>
 

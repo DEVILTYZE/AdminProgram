@@ -1,19 +1,12 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace SecurityChannel
 {
     public static class AesEngine
     {
-        private static readonly byte[] Iv =
-        {
-            byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
-            byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue,
-            byte.MaxValue, byte.MaxValue
-        };
+        private static readonly byte[] Iv = { 1, 21, 13, 32, 10, 45, 39, 67, 12, 10, 112, 222, 99, 198, 23, 250 };
         
         public static byte[] Encrypt(byte[] data, byte[] key, byte[] iv = null)
         {
@@ -21,12 +14,11 @@ namespace SecurityChannel
             
             if (data is null || data.Length == 0)
                 throw new Exception("Data exception");
-            
-            var aes = GetAes(key, iv);
-            var encryptor = aes.CreateEncryptor();
 
+            var aes = GetAes(key, iv);
+            
             using var ms = new MemoryStream();
-            using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+            using (var cs = new CryptoStream(ms, aes.CreateEncryptor(key, iv), CryptoStreamMode.Write))
             {
                 cs.Write(data, 0, data.Length);
                 cs.FlushFinalBlock();
@@ -42,17 +34,17 @@ namespace SecurityChannel
             if (data is null || data.Length == 0)
                 throw new Exception("Data exception");
             
-            var aes = GetAes(key, iv);
-            var decryptor = aes.CreateDecryptor();
-
-            using var ms = new MemoryStream(data);
-            using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
             var decrypted = new byte[data.Length];
-            var bytesRead = cs.Read(decrypted, 0, data.Length);
-            decrypted = decrypted.Take(bytesRead).ToArray();
-            //cs.FlushFinalBlock();
+            var aes = GetAes(key, iv);
+            
+            using var ms = new MemoryStream(data);
+            using var cs = new CryptoStream(ms, aes.CreateDecryptor(key, iv), CryptoStreamMode.Read);
+            var length = cs.Read(decrypted, 0, decrypted.Length);
 
-            return decrypted;
+            var returnArray = new byte[length];
+            Array.Copy(decrypted, returnArray, length);
+
+            return returnArray;
         }
 
         public static byte[] GetKey(int length = 32)
@@ -66,20 +58,21 @@ namespace SecurityChannel
             return key;
         }
 
-        private static Aes GetAes(byte[] key, byte[] iv)
+        private static AesCryptoServiceProvider GetAes(byte[] key, byte[] iv)
         {
+            iv ??= Iv;
+            
             if (key is null || key.Length == 0)
                 throw new Exception("Key exception");
             
             if (iv is null || iv.Length == 0)
                 throw new Exception("IV exception");
 
-            using var aes = Aes.Create();
-            aes.KeySize = 256;
-            aes.BlockSize = 128;
-            aes.Padding = PaddingMode.Zeros;
-            aes.Key = key;
-            aes.IV = iv;
+            using var aes = new AesCryptoServiceProvider();
+            aes.Mode = CipherMode.CBC;
+            aes.KeySize = key.Length * 8;
+            aes.BlockSize = iv.Length * 8;
+            aes.Padding = PaddingMode.ISO10126;
 
             return aes;
         }

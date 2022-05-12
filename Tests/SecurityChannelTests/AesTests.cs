@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Text;
 using NUnit.Framework;
 using SecurityChannel;
@@ -30,11 +31,12 @@ namespace Tests.SecurityChannelTests
         public void InputDataTest()
         {
             const string str = "EnCrYpT mE!!1!";
-            var data = Encoding.UTF8.GetBytes(str);
-            var key = AesEngine.GetKey();
+            var data = Encoding.Default.GetBytes(str);
+            var key = Enumerable.Repeat((byte)12, 32).ToArray();
+                //AesEngine.GetKey();
             var encrypted = AesEngine.Encrypt(data, key);
             
-            Assert.AreEqual(str, Encoding.UTF8.GetString(AesEngine.Decrypt(encrypted, key)));
+            Assert.AreEqual(str, Encoding.Default.GetString(AesEngine.Decrypt(encrypted, key)));
         }
     }
 }

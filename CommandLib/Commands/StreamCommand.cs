@@ -1,9 +1,13 @@
-﻿namespace CommandLib.Commands
+﻿using System;
+using System.Security.Cryptography;
+
+namespace CommandLib.Commands
 {
+    [Serializable]
     public class StreamCommand : AbstractCommand
     {
-        public StreamCommand(object data, int openKey) 
-            : base(ConstHelper.StreamCommandId, ConstHelper.StreamCommandString, data, openKey) { }
+        public StreamCommand(object data, RSAParameters publicKey) 
+            : base(ConstHelper.StreamCommandId, ConstHelper.StreamCommandString, data, publicKey) { }
 
         public override CommandResult Execute()
         {

@@ -1,47 +1,64 @@
 ﻿using System;
-using System.ComponentModel;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using SecurityChannel;
 
 namespace CommandLib.Commands
 {
     [Serializable]
     public abstract class AbstractCommand : ICommand, ISendable
     {
-        private readonly int _id;
-        private readonly string _commandName;
-        private readonly Type _commandType;
+        [JsonIgnore]
+        private Type CommandType => Type.GetType(CommandTypeName) ?? typeof(AbstractCommand);
         
+        public int Id { get; set; }
+        public string CommandName { get; set; }
+        public string CommandTypeName { get; set; }
+        public RsaKey PublicKey { get; set; }
+        
+        [JsonIgnore]
+        public RSAParameters RsaPublicKey { get; set; }
+        [JsonIgnore]
         public object Data { get; }
-        public int PublicKey { get; set; }
 
-        protected AbstractCommand(int id, string command, object data, int openKey)
+        [JsonConstructor]
+        protected AbstractCommand() { }
+
+        protected AbstractCommand(int id, string commandName, string commandTypeName, object data, RsaKey publicKey)
         {
-            _id = id;
-            _commandName = command;
-            _commandType = GetType();
+            Id = id;
+            CommandName = commandName;
+            CommandTypeName = commandTypeName;
             Data = data;
-            PublicKey = openKey;
+            PublicKey = publicKey;
+        }
+        
+        protected AbstractCommand(int id, string commandName, object data, RSAParameters publicKey)
+        {
+            Id = id;
+            CommandName = commandName;
+            CommandTypeName = GetType().FullName;
+            Data = data;
+            PublicKey = new RsaKey(publicKey);
         }
 
-        public abstract CommandResult Execute();
-        
+        public virtual CommandResult Execute() => new(CommandResultStatus.Failed, null);
+
         public byte[] ToBytes()
         {
             var json = JsonSerializer.Serialize(this);
 
-            return Encoding.UTF8.GetBytes(json);
+            return Encoding.Default.GetBytes(json);
         }
 
-        public static ICommand FromBytes(byte[] data)
+        public static ICommand FromBytes(byte[] data, Type type)
         {
-            var json = Encoding.UTF8.GetString(data);
-            var command = JsonSerializer.Deserialize<AbstractCommand>(json);
+            var json = Encoding.Default.GetString(data);
+            var command = (ICommand)JsonSerializer.Deserialize(json, type);
             
-            return command?.ToOriginalType();
+            return command;
         }
-        
-        protected ICommand ToOriginalType() 
-            => (ICommand)TypeDescriptor.GetConverter(_commandType).ConvertTo(this, _commandType);
     }
 }

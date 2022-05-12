@@ -8,6 +8,15 @@
           "build/netstandard1.0/coverlet.collector.targets": {}
         }
       },
+      "GostCryptography/2.0.9": {
+        "type": "package",
+        "compile": {
+          "lib/net452/GostCryptography.dll": {}
+        },
+        "runtime": {
+          "lib/net452/GostCryptography.dll": {}
+        }
+      },
       "Microsoft.CodeCoverage/16.9.4": {
         "type": "package",
         "compile": {
@@ -1517,10 +1526,24 @@
           "lib/netstandard1.3/System.Xml.XPath.XmlDocument.dll": {}
         }
       },
+      "CommandLib/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v5.0",
+        "dependencies": {
+          "SecurityChannel": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/CommandLib.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/CommandLib.dll": {}
+        }
+      },
       "SecurityChannel/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v5.0",
         "dependencies": {
+          "GostCryptography": "2.0.9",
           "System.Security.Cryptography.Algorithms": "4.3.1"
         },
         "compile": {
@@ -1582,6 +1605,21 @@
         "coverlet-icon.png",
         "coverlet.collector.3.0.2.nupkg.sha512",
         "coverlet.collector.nuspec"
+      ]
+    },
+    "GostCryptography/2.0.9": {
+      "sha512": "gLD1GNsjulGG7MgHwgk5SVixZpEg4TWYqp9PpwrJ718ZtwXUDk2i7KXVmFoJpLKb/2XZJNtet6gxSvs2hXwAdg==",
+      "type": "package",
+      "path": "gostcryptography/2.0.9",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "gostcryptography.2.0.9.nupkg.sha512",
+        "gostcryptography.nuspec",
+        "lib/net40/GostCryptography.dll",
+        "lib/net40/GostCryptography.xml",
+        "lib/net452/GostCryptography.dll",
+        "lib/net452/GostCryptography.xml"
       ]
     },
     "Microsoft.CodeCoverage/16.9.4": {
@@ -5677,6 +5715,11 @@
         "system.xml.xpath.xmldocument.nuspec"
       ]
     },
+    "CommandLib/1.0.0": {
+      "type": "project",
+      "path": "../CommandLib/CommandLib.csproj",
+      "msbuildProject": "../CommandLib/CommandLib.csproj"
+    },
     "SecurityChannel/1.0.0": {
       "type": "project",
       "path": "../SecurityChannel/SecurityChannel.csproj",
@@ -5685,6 +5728,7 @@
   },
   "projectFileDependencyGroups": {
     "net5.0": [
+      "CommandLib >= 1.0.0",
       "Microsoft.NET.Test.Sdk >= 16.9.4",
       "NUnit >= 3.13.1",
       "NUnit3TestAdapter >= 3.17.0",
@@ -5729,6 +5773,9 @@
         "net5.0": {
           "targetAlias": "net5.0",
           "projectReferences": {
+            "E:\\Disk D\\ProjectsCode\\C#\\Diplom\\AdminProgram\\CommandLib\\CommandLib.csproj": {
+              "projectPath": "E:\\Disk D\\ProjectsCode\\C#\\Diplom\\AdminProgram\\CommandLib\\CommandLib.csproj"
+            },
             "E:\\Disk D\\ProjectsCode\\C#\\Diplom\\AdminProgram\\SecurityChannel\\SecurityChannel.csproj": {
               "projectPath": "E:\\Disk D\\ProjectsCode\\C#\\Diplom\\AdminProgram\\SecurityChannel\\SecurityChannel.csproj"
             }
@@ -5780,5 +5827,17 @@
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.400\\RuntimeIdentifierGraph.json"
       }
     }
-  }
+  },
+  "logs": [
+    {
+      "code": "NU1701",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'GostCryptography 2.0.9' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8' instead of the project target framework 'net5.0'. This package may not be fully compatible with your project.",
+      "libraryId": "GostCryptography",
+      "targetGraphs": [
+        "net5.0"
+      ]
+    }
+  ]
 }

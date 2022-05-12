@@ -2,25 +2,39 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SecurityChannel
 {
     [Serializable]
     public class Datagram
     {
-        private byte[] _data;
-        private byte[] _aesKey;
+        [JsonIgnore]
+        private Type Type => Type.GetType(TypeName) ?? typeof(object);
+        
+        public byte[] Data { get; }
+        public byte[] AesKey { get; }
+        public string TypeName { get; }
 
-        public Datagram(byte[] data, byte[] aesKey, RSAParameters rsaPublicKey)
+        [JsonConstructor]
+        public Datagram(byte[] data, byte[] aesKey, string typeName)
         {
-            _data = AesEngine.Encrypt(data, aesKey);
-            _aesKey = RsaEngine.Encrypt(aesKey, rsaPublicKey);
+            Data = data;
+            AesKey = aesKey;
+            TypeName = typeName;
         }
-
+        
+        public Datagram(byte[] data, byte[] aesKey, RSAParameters rsaPublicKey, string typeName)
+        {
+            Data = AesEngine.Encrypt(data, aesKey);
+            AesKey = RsaEngine.Encrypt(aesKey, rsaPublicKey);
+            TypeName = typeName;
+        }
+        
         public byte[] GetData(RSAParameters rsaPrivateKey)
         {
-            var aesKey = RsaEngine.Decrypt(_aesKey, rsaPrivateKey);
-            var data = AesEngine.Decrypt(_data, aesKey);
+            var aesKey = RsaEngine.Decrypt(AesKey, rsaPrivateKey);
+            var data = AesEngine.Decrypt(Data, aesKey);
 
             return data;
         }
@@ -29,12 +43,12 @@ namespace SecurityChannel
         {
             var json = JsonSerializer.Serialize(this);
 
-            return Encoding.UTF8.GetBytes(json);
+            return Encoding.Default.GetBytes(json);
         }
 
         public static Datagram FromBytes(byte[] data)
         {
-            var json = Encoding.UTF8.GetString(data);
+            var json = Encoding.Default.GetString(data);
 
             return JsonSerializer.Deserialize<Datagram>(json);
         }

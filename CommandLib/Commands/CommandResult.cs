@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using CommandLib.Annotations;
+using SecurityChannel;
 
 namespace CommandLib.Commands
 {
@@ -18,7 +19,7 @@ namespace CommandLib.Commands
     {
         public CommandResultStatus Status { get; }
         public object Data { get; }
-        public int PublicKey { get; set; }
+        public RsaKey PublicKey { get; set; }
 
         public CommandResult(CommandResultStatus status, [CanBeNull]object data)
         {
@@ -30,12 +31,12 @@ namespace CommandLib.Commands
         {
             var json = JsonSerializer.Serialize(this);
             
-            return Encoding.UTF8.GetBytes(json);
+            return Encoding.Default.GetBytes(json);
         }
 
         public static CommandResult FromBytes(byte[] data)
         {
-            var str = Encoding.UTF8.GetString(data);
+            var str = Encoding.Default.GetString(data);
 
             return JsonSerializer.Deserialize<CommandResult>(str);
         }

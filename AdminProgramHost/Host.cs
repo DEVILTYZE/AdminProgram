@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -90,7 +91,8 @@ namespace AdminProgramHost
                 while (true)
                 {
                     var data = ReceiveData(client, remoteIp);
-                    var command = AbstractCommand.FromBytes(Encoding.UTF8.GetBytes(data));
+                    // TODO: Изменить...
+                    var command = new MessageCommand(null, new RSAParameters()); //AbstractCommand.FromBytes(Encoding.UTF8.GetBytes(data));
 
                     if (command is MessageCommand { IsSystem: true })
                         SetMacAddress(command.Execute());

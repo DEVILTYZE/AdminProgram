@@ -4,5 +4,6 @@
     {
         CommandResult Execute();
         byte[] ToBytes();
+        //ICommand ToOriginalType();
     }
 }

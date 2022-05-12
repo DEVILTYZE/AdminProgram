@@ -1,5 +1,6 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using NUnit.Framework;
 using SecurityChannel;
 
@@ -11,26 +12,28 @@ namespace Tests.SecurityChannelTests
         private byte[] _aesKey;
         private RSAParameters[] _rsaKeys;
         private Datagram _datagram;
+        private string _jsonDatagram;
         
         [SetUp]
         public void Setup()
         {
             _aesKey = AesEngine.GetKey();
             _rsaKeys = RsaEngine.GetKeys();
-            _datagram = new Datagram(Encoding.UTF8.GetBytes(Data), _aesKey, _rsaKeys[1]);
+            _datagram = new Datagram(Encoding.Default.GetBytes(Data), _aesKey, _rsaKeys[1], Data.GetType().FullName);
+            _jsonDatagram = JsonSerializer.Serialize(_datagram);
         }
 
         [Test]
         public void CreateDatagram()
-            => Assert.AreEqual(Data, Encoding.UTF8.GetString(_datagram.GetData(_rsaKeys[0])));
+            => Assert.AreEqual(Data, Encoding.Default.GetString(_datagram.GetData(_rsaKeys[0])));
         
         [Test]
         public void ByteArrayDatagram()
         {
             var bytes = _datagram.ToBytes();
-            var newDatagram = Datagram.FromBytes(bytes);
+            var newJsonDatagram = JsonSerializer.Serialize(Datagram.FromBytes(bytes));
             
-            Assert.AreEqual(_datagram, newDatagram);
+            Assert.AreEqual(_jsonDatagram, newJsonDatagram);
         }
     }
 }

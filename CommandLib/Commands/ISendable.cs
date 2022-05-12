@@ -1,8 +1,10 @@
-﻿namespace CommandLib.Commands
+﻿using SecurityChannel;
+
+namespace CommandLib.Commands
 {
     public interface ISendable
     {
-        int PublicKey { get; set; }
+        RsaKey PublicKey { get; }
         byte[] ToBytes();
     }
 }

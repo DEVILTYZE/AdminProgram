@@ -1,9 +1,13 @@
-﻿namespace CommandLib.Commands
+﻿using System;
+using System.Security.Cryptography;
+
+namespace CommandLib.Commands
 {
+    [Serializable]
     public class ShutdownCommand : AbstractCommand
     {
-        public ShutdownCommand(object data, int openKey) 
-            : base(ConstHelper.ShutdownCommandId, ConstHelper.ShutdownCommandString, data, openKey) { }
+        public ShutdownCommand(object data, RSAParameters publicKey) 
+            : base(ConstHelper.ShutdownCommandId, ConstHelper.ShutdownCommandString, data, publicKey) { }
 
         public override CommandResult Execute()
         {

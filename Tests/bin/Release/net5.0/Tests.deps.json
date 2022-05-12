@@ -8,6 +8,7 @@
     ".NETCoreApp,Version=v5.0": {
       "Tests/1.0.0": {
         "dependencies": {
+          "CommandLib": "1.0.0",
           "Microsoft.NET.Test.Sdk": "16.9.4",
           "NUnit": "3.13.1",
           "NUnit3TestAdapter": "3.17.0",
@@ -19,6 +20,14 @@
         }
       },
       "coverlet.collector/3.0.2": {},
+      "GostCryptography/2.0.9": {
+        "runtime": {
+          "lib/net452/GostCryptography.dll": {
+            "assemblyVersion": "2.0.9.0",
+            "fileVersion": "2.0.9.0"
+          }
+        }
+      },
       "Microsoft.CodeCoverage/16.9.4": {
         "runtime": {
           "lib/netcoreapp1.0/Microsoft.VisualStudio.CodeCoverage.Shim.dll": {
@@ -974,8 +983,17 @@
           }
         }
       },
+      "CommandLib/1.0.0": {
+        "dependencies": {
+          "SecurityChannel": "1.0.0"
+        },
+        "runtime": {
+          "CommandLib.dll": {}
+        }
+      },
       "SecurityChannel/1.0.0": {
         "dependencies": {
+          "GostCryptography": "2.0.9",
           "System.Security.Cryptography.Algorithms": "4.3.1"
         },
         "runtime": {
@@ -996,6 +1014,13 @@
       "sha512": "sha512-iBvPAIDaI7j/iMx/DzCGCJ3rdiOmel9VINEfaTiBv/NKIGHOP4X3hqc6Q1wgMtArEshlhXexQknP17SK4vXb1w==",
       "path": "coverlet.collector/3.0.2",
       "hashPath": "coverlet.collector.3.0.2.nupkg.sha512"
+    },
+    "GostCryptography/2.0.9": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-gLD1GNsjulGG7MgHwgk5SVixZpEg4TWYqp9PpwrJ718ZtwXUDk2i7KXVmFoJpLKb/2XZJNtet6gxSvs2hXwAdg==",
+      "path": "gostcryptography/2.0.9",
+      "hashPath": "gostcryptography.2.0.9.nupkg.sha512"
     },
     "Microsoft.CodeCoverage/16.9.4": {
       "type": "package",
@@ -1577,6 +1602,11 @@
       "sha512": "sha512-A/uxsWi/Ifzkmd4ArTLISMbfFs6XpRPsXZonrIqyTY70xi8t+mDtvSM5Os0RqyRDobjMBwIDHDL4NOIbkDwf7A==",
       "path": "system.xml.xpath.xmldocument/4.3.0",
       "hashPath": "system.xml.xpath.xmldocument.4.3.0.nupkg.sha512"
+    },
+    "CommandLib/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
     },
     "SecurityChannel/1.0.0": {
       "type": "project",

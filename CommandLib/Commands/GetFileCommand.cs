@@ -1,9 +1,13 @@
-﻿namespace CommandLib.Commands
+﻿using System;
+using System.Security.Cryptography;
+
+namespace CommandLib.Commands
 {
+    [Serializable]
     public class GetFileCommand : AbstractCommand
     {
-        public GetFileCommand(object data, int openKey) 
-            : base(ConstHelper.GetFileCommandId, ConstHelper.GetFileCommandString, data, openKey) { }
+        public GetFileCommand(object data, RSAParameters publicKey) 
+            : base(ConstHelper.GetFileCommandId, ConstHelper.GetFileCommandString, data, publicKey) { }
 
         public override CommandResult Execute()
         {
