@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -12,6 +11,7 @@ using System.Threading;
 using System.Windows;
 using CommandLib.Commands;
 using Microsoft.Win32;
+using SecurityChannel;
 
 namespace AdminProgramHost
 {
@@ -35,24 +35,8 @@ namespace AdminProgramHost
             if (socket.LocalEndPoint is IPEndPoint endPoint)
                 IpAddress = endPoint.Address.ToString();
 
-            MacAddress = GetMacAddress();
-            
-            // if (!File.Exists(MacDatPath))
-            // {
-            //     var client = new UdpClient(Port);
-            //
-            //     try
-            //     {
-            //         var mac = ReceiveData(client);
-            //
-            //         using var sw = new StreamWriter(MacDatPath, false);
-            //         sw.Write(mac);
-            //     }
-            //     finally
-            //     {
-            //         client.Close();
-            //     }
-            // }
+            MacAddress = NetHelper.GetMacAddress();
+            GenerateNewKeys();
 
             if (_threadReceiveData.IsAlive)
                 _threadReceiveData.Join();
@@ -61,51 +45,64 @@ namespace AdminProgramHost
             _threadReceiveData.Start();
         }
 
-        private static string GetMacAddress()
-        {
-            var interfaces = NetworkInterface.GetAllNetworkInterfaces();
-
-            foreach (var adapter in interfaces)
-            {
-                var mac = adapter.GetPhysicalAddress().ToString();
-
-                if (!string.IsNullOrEmpty(mac))
-                    return mac;
-            }
-
-            throw new Exception("mac address don't exists");
-        }
+        
 
         /// <summary>
         /// Метод включения клиента в режим прослушки сети.
         /// </summary>
         private void OpenClient()
         {
-            var client = new UdpClient(Port);
+            var client = new UdpClient();
             var restart = false;
+            var remoteIp = GetEndPoint();
 
             try
             {
-                var remoteIp = GetEndPoint();
-                
                 while (true)
                 {
-                    var data = ReceiveData(client, remoteIp);
-                    // TODO: Изменить...
-                    var command = new MessageCommand(null, new RSAParameters()); //AbstractCommand.FromBytes(Encoding.UTF8.GetBytes(data));
+                    // Шаг 1: принимаем данные.
+                    var data = client.Receive(ref remoteIp);
 
-                    if (command is MessageCommand { IsSystem: true })
-                        SetMacAddress(command.Execute());
+                    // Шаг 2: декодируем данные в датаграмму.
+                    var datagram = Datagram.FromBytes(data);
 
-                    var resultBytes = command.Execute().ToBytes();
-                    client.Send(resultBytes, resultBytes.Length, remoteIp);
+                    // Шаг 3: получаем из датаграммы команду.
+                    var command = AbstractCommand.FromBytes(datagram.GetData(_privateKey), datagram.Type);
 
-                    // TODO: Добавить шифрование...
+                    // Шаг 4: выполняем команду.
+                    var result = command is MessageCommand { IsSystem: true }
+                        ? SetMacAddress(command.Execute())
+                        : command.Execute();
+
+                    // Шаг 5: обновляем ключи.
+                    GenerateNewKeys();
+
+                    // Шаг 6: добавляем новый публичный ключ к результату.
+                    result.PublicKey = new RsaKey(_publicKey);
+
+                    // Шаг 7: формируем новую датаграмму из результата.
+                    var resultBytes = result.ToBytes();
+                    var resultDatagram = new Datagram(resultBytes, AesEngine.GetKey(),
+                        command.RsaPublicKey, typeof(CommandResult).FullName, datagram.IsEncrypted);
+                    var resultDatagramBytes = resultDatagram.ToBytes();
+
+                    // Шаг 8: отправляем новую датаграмму.
+                    client.Send(resultDatagramBytes, resultDatagramBytes.Length, remoteIp);
                 }
+            }
+            catch (SocketException)
+            {
+                restart = true;
             }
             catch (Exception)
             {
                 restart = true;
+                var result = new CommandResult(CommandResultStatus.Failed, string.Empty);
+                var datagram = new Datagram(result.ToBytes(), null, new RSAParameters(), 
+                    typeof(CommandResult).FullName, false);
+                var datagramBytes = datagram.ToBytes();
+
+                client.Send(datagramBytes, datagramBytes.Length, remoteIp);
             }
             finally
             {
@@ -113,35 +110,23 @@ namespace AdminProgramHost
 
                 if (restart)
                 {
-                    Application.Current.Run();
+                    Process.Start(Application.ResourceAssembly.Location);
                     Application.Current.Shutdown();
                 }
             }
         }
 
-        /// <summary>
-        /// Метод получения данных по UDP клиенту.
-        /// </summary>
-        /// <param name="client">UDP-клиент.</param>
-        /// <param name="remoteIp">Конечная точка принятия данных.</param>
-        /// <returns>Переданные данные в виде строки.</returns>
-        private static string ReceiveData(UdpClient client, IPEndPoint remoteIp)
-        {
-            var data = client.Receive(ref remoteIp);
-            var dataString = Encoding.UTF8.GetString(data);
-            
-            return dataString;
-        }
-
-        private void SetMacAddress(CommandResult commandResult)
+        private CommandResult SetMacAddress(CommandResult commandResult)
         {
             if (commandResult.Data is null || commandResult.Status == CommandResultStatus.Failed)
-                return;
+                return new CommandResult(CommandResultStatus.Failed, null);
 
             _mainMacAddress = (string)commandResult.Data;
 
             using var sw = new StreamWriter(MacDatPath, false);
             sw.Write(_mainMacAddress);
+
+            return new CommandResult(CommandResultStatus.Successed, null);
         }
 
         private IPEndPoint GetEndPoint()
@@ -152,7 +137,7 @@ namespace AdminProgramHost
                 {
                     FileName = "arp",
                     Arguments = "-a | find \"" + _mainMacAddress + '\"',
-                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardOutputEncoding = Encoding.Unicode,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     CreateNoWindow = true
@@ -187,6 +172,13 @@ namespace AdminProgramHost
             }
 
             return true;
+        }
+
+        private void GenerateNewKeys()
+        {
+            var keys = RsaEngine.GetKeys();
+            _privateKey = keys[0];
+            _publicKey = keys[1];
         }
     }
 }

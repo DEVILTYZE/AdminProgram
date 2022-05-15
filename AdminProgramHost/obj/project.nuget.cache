@@ -1,10 +1,9 @@
 {
   "version": 2,
-  "dgSpecHash": "ug65I/ItYiTXeoR7pzfHsi4nayGbVyI4PgQEgOLESroxj2ByxJalS1NGpSQRpZTBSq2vaSQgqTWGnFXVOfFWmA==",
+  "dgSpecHash": "4elLN15q5NeTYJ5ScLIWy9xP+bcfPU3PGtYE4LATM/Ht4pGpSlqX2SLeneucW38SmHKXteLRkZ0IrZdFhzTetA==",
   "success": true,
   "projectFilePath": "E:\\Disk D\\ProjectsCode\\C#\\Diplom\\AdminProgram\\AdminProgramHost\\AdminProgramHost.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\user\\.nuget\\packages\\gostcryptography\\2.0.9\\gostcryptography.2.0.9.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\microsoft.netcore.targets\\1.1.0\\microsoft.netcore.targets.1.1.0.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\runtime.debian.8-x64.runtime.native.system.security.cryptography.openssl\\4.3.2\\runtime.debian.8-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
@@ -42,16 +41,5 @@
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\system.threading\\4.3.0\\system.threading.4.3.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\system.threading.tasks\\4.3.0\\system.threading.tasks.4.3.0.nupkg.sha512"
   ],
-  "logs": [
-    {
-      "code": "NU1701",
-      "level": "Warning",
-      "warningLevel": 1,
-      "message": "Package 'GostCryptography 2.0.9' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8' instead of the project target framework 'net5.0-windows7.0'. This package may not be fully compatible with your project.",
-      "libraryId": "GostCryptography",
-      "targetGraphs": [
-        "net5.0-windows7.0"
-      ]
-    }
-  ]
+  "logs": []
 }

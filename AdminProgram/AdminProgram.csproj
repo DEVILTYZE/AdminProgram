@@ -10,4 +10,15 @@
       <PackageReference Include="EntityFramework" Version="6.4.4" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\CommandLib\CommandLib.csproj" />
+      <ProjectReference Include="..\SecurityChannel\SecurityChannel.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="ViewModels\HostViewModel.Properties.cs">
+        <DependentUpon>HostViewModel.cs</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
 </Project>

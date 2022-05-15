@@ -1,8 +1,10 @@
-﻿using System.Windows;
+﻿using System;
+using System.Threading;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using AdminProgram.Models;
 using AdminProgram.ViewModels;
+using SecurityChannel;
 
 namespace AdminProgram.Views
 {
@@ -15,6 +17,8 @@ namespace AdminProgram.Views
         private readonly Style _searchEmpty = Application.Current.FindResource("SearchEmpty") as Style;
         private readonly Style _searchNotEmpty = new()
             { Setters = { new Setter { Property = ContentProperty, Value = string.Empty } } };
+
+        private Thread _thread;
         
         public MainWindow()
         {
@@ -59,7 +63,7 @@ namespace AdminProgram.Views
 
         private static void Scan(HostViewModel hostViewModel)
         {
-            hostViewModel.IsScanButtonEnabled = false;
+            hostViewModel.ScanThreads.IsDead = false;
             
             if (!hostViewModel.Scan())
                 MessageBox.Show("Scan error", "Error");
@@ -69,12 +73,14 @@ namespace AdminProgram.Views
             => RightPanel.Visibility = Visibility.Visible;
         
 
-        private void RefreshAllButton_OnClick(object sender, RoutedEventArgs e)
-        {
-            _model.Refresh();
-        }
+        private void RefreshAllButton_OnClick(object sender, RoutedEventArgs e) => _model.Refresh();
+        
 
-        private void RefreshButton_OnClick(object sender, RoutedEventArgs e) => HostViewModel.Refresh(_model.SelectedHost);
+        private void RefreshButton_OnClick(object sender, RoutedEventArgs e)
+        {
+            _thread = new Thread(HostViewModel.Refresh);
+            _thread.Start(_model.SelectedHost);
+        }
 
         private void MainWindow_OnKeyDown(object sender, KeyEventArgs e)
         {
@@ -88,6 +94,14 @@ namespace AdminProgram.Views
                 return;
             
             _model.Scan();
+        }
+
+        private void MainWindow_OnClosed(object sender, EventArgs e)
+        {
+            if (_thread is not null && _thread.IsAlive)
+                _thread.Join();
+            
+            _model.WaitAllThreads();
         }
     }
 }

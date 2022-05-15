@@ -4,7 +4,7 @@ namespace CommandLib.Commands
 {
     public interface ISendable
     {
-        RsaKey PublicKey { get; }
+        RsaKey PublicKey { get; set; }
         byte[] ToBytes();
     }
 }

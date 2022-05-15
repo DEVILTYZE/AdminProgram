@@ -31,4 +31,7 @@ E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-wi
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-windows\runtimes\win-x86\native\sni.dll
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-windows\runtimes\unix\lib\netcoreapp2.1\System.Data.SqlClient.dll
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-windows\runtimes\win\lib\netcoreapp2.1\System.Data.SqlClient.dll
-E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\obj\Release\net5.0-windows\AdminProgram.csproj.CopyComplete
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-windows\CommandLib.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-windows\SecurityChannel.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-windows\CommandLib.pdb
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-windows\SecurityChannel.pdb

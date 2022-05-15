@@ -7,13 +7,15 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
 using AdminProgram.Annotations;
-using AdminProgram.Helpers;
 using AdminProgram.Models;
+using CommandLib.Commands;
+using SecurityChannel;
 
 namespace AdminProgram.ViewModels
 {
@@ -21,15 +23,18 @@ namespace AdminProgram.ViewModels
     {
         public HostViewModel()
         {
+            ScanThreads = new ThreadList { IsDead = true };
+            RefreshThreads = new ThreadList { IsDead = true };
             InitializeDb();
-            
+
             if (!NetworkInterface.GetIsNetworkAvailable())
                 return;
 
             _currentHost = Dns.GetHostEntry(Dns.GetHostName());
-            
-            foreach (var ipAddress in _currentHost.AddressList.Where(thisIp => thisIp.AddressFamily == AddressFamily.InterNetwork))
-                CreateMacAddresses(ipAddress.ToString());
+
+            foreach (var ipAddress in
+                     _currentHost.AddressList.Where(thisIp => thisIp.AddressFamily == AddressFamily.InterNetwork))
+                CreateMacAddressTable(ipAddress.ToString());
         }
 
         public bool Scan()
@@ -37,70 +42,100 @@ namespace AdminProgram.ViewModels
             if (_currentHost is null)
                 return false;
 
-            IsScanButtonEnabled = false;
-            _threads[0] = new ThreadList();
-            
+            ScanThreads.IsDead = false;
+
             foreach (var ipAddress in _addresses)
             {
                 var thread = new Thread(AddHost);
                 thread.Start(ipAddress);
-                _threads[0].Add(thread);
+                ScanThreads.Add(thread);
             }
-            
-            WaitThreads(true);
+
+            var threadOfThreadList = new Thread(ScanThreads.WaitThreads);
+            threadOfThreadList.Start();
 
             return true;
         }
 
         public void Refresh()
         {
-            IsRefreshButtonEnabled = false;
-            _threads[1] = new ThreadList();
-            
+            RefreshThreads.IsDead = false;
+
             foreach (var host in Hosts)
             {
                 var thread = new Thread(new ParameterizedThreadStart(Refresh));
                 thread.Start(host);
-                _threads[1].Add(thread);
+                RefreshThreads.Add(thread);
             }
-            
-            WaitThreads(false);
+
+            var threadOfThreadList = new Thread(RefreshThreads.WaitThreads);
+            threadOfThreadList.Start();
         }
 
         public static void Refresh([NotNull] object obj)
         {
             var host = (Host)obj;
-
+            host.Status = HostStatus.Loading;
+            
             if (host is null)
                 throw new ArgumentException("Host is null");
 
-            host.Status = NetHelper.Ping(host.IpAddress);
+            var client = new UdpClient();
+            client.Client.ReceiveTimeout = NetHelper.Timeout;
+            var publicKey = GetPublicKeyOrDefault(client, host.RouteIp);
+            host.Status = publicKey.HasValue ? HostStatus.On : NetHelper.Ping(host.IpAddress);
         }
 
         public bool PowerOn()
         {
-            _selectedHost.Status = HostStatus.Loading;
+            SelectedHost.Status = HostStatus.Loading;
             var client = new UdpClient();
-            var magicPacket = NetHelper.GetMagicPacket(_selectedHost.MacAddress);
-            
+            var magicPacket = NetHelper.GetMagicPacket(SelectedHost.MacAddress);
+            var remoteIp = new IPEndPoint(IPAddress.Parse(SelectedHost.IpAddress), NetHelper.Port);
+
             try
             {
                 client.Send(magicPacket, magicPacket.Length, new IPEndPoint(IPAddress.Broadcast, NetHelper.Port));
-            }
-            catch (SocketException) { return false; }
+                client.Client.ReceiveTimeout = NetHelper.LoadTimeout;
+                var publicKey = GetPublicKeyOrDefault(client, remoteIp);
 
-            return true;
+                if (!publicKey.HasValue)
+                    return false;
+
+                SelectedHost.GenerateNewKeys();
+                
+                var command = new MessageCommand(NetHelper.GetMacAddress(), SelectedHost.PublicKey) { IsSystem = true };
+                var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), publicKey.Value,
+                    typeof(MessageCommand).FullName, true);
+                var datagramBytes = datagram.ToBytes();
+                client.Send(datagramBytes, datagramBytes.Length, remoteIp);
+                
+                client.Client.ReceiveTimeout = NetHelper.Timeout;
+                var data = client.Receive(ref remoteIp);
+                datagram = Datagram.FromBytes(data);
+                var result = CommandResult.FromBytes(datagram.GetData(SelectedHost.PrivateKey));
+
+                return result.Status == CommandResultStatus.Successed;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+            finally
+            {
+                client.Close();
+            }
         }
 
         public bool Shutdown()
         {
-            _selectedHost.Status = HostStatus.Off;
+            SelectedHost.Status = HostStatus.Off;
             var shutdownProcess = new Process
             {
                 StartInfo =
                 {
                     FileName = "shutdown.exe",
-                    Arguments = $@"-s -f -m \\{_selectedHost.IpAddress} -t 1",
+                    Arguments = $@"-s -f -m \\{SelectedHost.IpAddress} -t 1",
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true
                 }
@@ -110,7 +145,16 @@ namespace AdminProgram.ViewModels
             {
                 return shutdownProcess.Start();
             }
-            catch (Exception) { return false; }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public void WaitAllThreads()
+        {
+            ScanThreads.WaitThreads();
+            RefreshThreads.WaitThreads();
         }
 
         private void AddHost([NotNull] object obj)
@@ -122,9 +166,13 @@ namespace AdminProgram.ViewModels
             {
                 hostEntry = Dns.GetHostEntry(ip);
             }
-            catch (SocketException) { return; }
-            
-            var host = new Host(hostEntry.HostName, ip, mac) { Status = NetHelper.Ping(ip) };
+            catch (SocketException)
+            {
+                return;
+            }
+
+            var host = new Host(hostEntry.HostName, ip, mac);
+            Refresh(host);
 
             lock (_locker)
             {
@@ -133,11 +181,11 @@ namespace AdminProgram.ViewModels
                     var hostInHosts = Hosts.FirstOrDefault(thisHost =>
                         string.CompareOrdinal(host.MacAddress, thisHost.MacAddress) == 0);
 
-                    if (hostInHosts is null) 
+                    if (hostInHosts is null)
                     {
                         Hosts.Add(host);
                         OnPropertyChanged(nameof(Hosts));
-                        
+
                         _db.Hosts.Add(new HostDb
                         {
                             Name = host.Name,
@@ -146,25 +194,25 @@ namespace AdminProgram.ViewModels
                         });
                     }
                     else if (string.CompareOrdinal(host.IpAddress, hostInHosts.IpAddress) != 0 ||
-                        string.CompareOrdinal(host.Name, hostInHosts.Name) != 0)
+                             string.CompareOrdinal(host.Name, hostInHosts.Name) != 0)
                     {
-                        var hostInDb = _db.Hosts.ToList().FirstOrDefault(thisHost => 
+                        var hostInDb = _db.Hosts.ToList().FirstOrDefault(thisHost =>
                             string.CompareOrdinal(host.MacAddress, thisHost.MacAddress) == 0);
 
                         if (hostInDb is null)
                             return;
-                        
+
                         hostInDb.Name = hostInHosts.Name = host.Name;
                         hostInDb.IpAddress = hostInHosts.IpAddress = host.IpAddress;
                         _db.Entry(hostInDb).State = EntityState.Modified;
                     }
-                    
+
                     _db.SaveChanges();
                 }));
             }
         }
-        
-        private void CreateMacAddresses(string ipAddress)
+
+        private void CreateMacAddressTable(string ipAddress)
         {
             _addresses = new Dictionary<string, string>();
             var arpProcess = new Process
@@ -173,7 +221,7 @@ namespace AdminProgram.ViewModels
                 {
                     FileName = "arp",
                     Arguments = "-a -N " + ipAddress,
-                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardOutputEncoding = Encoding.Unicode,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     CreateNoWindow = true
@@ -182,11 +230,40 @@ namespace AdminProgram.ViewModels
             arpProcess.Start();
 
             var cmdOutput = arpProcess.StandardOutput.ReadToEnd();
-            var pattern = @$"({ipAddress.Split('.')[0]}\." 
-                + @"(\d{0,3}\.){2}\d{0,2}[0-4])\s+(([\da-f]{2}-){5}[\da-f][\da-e])";
+            var pattern = @$"({ipAddress.Split('.')[0]}\."
+                          + @"(\d{0,3}\.){2}\d{0,2}[0-4])\s+(([\da-f]{2}-){5}[\da-f][\da-e])";
 
             foreach (Match match in Regex.Matches(cmdOutput, pattern))
                 _addresses.Add(match.Groups[1].Value, match.Groups[3].Value.Replace('-', ':'));
+        }
+
+        private static RSAParameters? GetPublicKeyOrDefault(UdpClient client, IPEndPoint remoteIp)
+        {
+            var nullKey = new RSAParameters();
+            var command = new MessageCommand(string.Empty, nullKey);
+            var datagram = new Datagram(command.ToBytes(), null, nullKey, typeof(MessageCommand).FullName,
+                false);
+            var datagramBytes = datagram.ToBytes();
+            byte[] data;
+
+            client.Send(datagramBytes, datagramBytes.Length, remoteIp);
+
+            try
+            {
+                data = client.Receive(ref remoteIp);
+            }
+            catch (SocketException)
+            {
+                return null;
+            }
+
+            var receivedDatagram = Datagram.FromBytes(data);
+            var result = CommandResult.FromBytes(receivedDatagram.GetData(nullKey));
+
+            if (result.Status == CommandResultStatus.Failed)
+                return null;
+
+            return result.PublicKey.GetKey();
         }
 
         private void InitializeDb()
@@ -196,31 +273,14 @@ namespace AdminProgram.ViewModels
                 _db = new AdminContext();
                 _db.Hosts.Load();
             }
-            catch (Exception) { return; }
+            catch (Exception)
+            {
+                return;
+            }
 
             Hosts = new ObservableCollection<Host>(_db.Hosts.Local.Select(thisHost => new Host(thisHost)));
             OnPropertyChanged(nameof(Hosts));
             Refresh();
-        }
-
-        private void WaitThreads(bool isScan)
-        {
-            var thread = new Thread(WaitThreads);
-            thread.Start(isScan);
-        }
-
-        private void WaitThreads([CanBeNull] object obj)
-        {
-            if (obj is null)
-                return;
-
-            var isScan = (bool)obj;
-            _threads[isScan ? 0 : 1].WaitThreads();
-            
-            if (isScan) 
-                IsScanButtonEnabled = true;
-            else 
-                IsRefreshButtonEnabled = true;
         }
     }
 }

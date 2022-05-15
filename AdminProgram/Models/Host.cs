@@ -1,24 +1,23 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Linq;
+using System.Net;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using AdminProgram.Annotations;
+using SecurityChannel;
 
 namespace AdminProgram.Models
 {
-    public enum HostStatus
-    {
-        On,
-        Off,
-        Loading,
-        Unknown
-    }
-
     public sealed class Host : INotifyPropertyChanged
     {
         private string _name, _ipAddress;
         private readonly string _macAddress;
         private HostStatus _status;
+        
+        public RSAParameters PrivateKey { get; private set; }
+        public RSAParameters PublicKey { get; private set; }
+        public IPEndPoint RouteIp => new(IPAddress.Parse(IpAddress), NetHelper.MessageCommandPort);
         
         public string Name
         {
@@ -80,20 +79,29 @@ namespace AdminProgram.Models
                 OnPropertyChanged();
             }
         }
+
+        private Host() => GenerateNewKeys();
         
-        public Host(string name, string ipAddress, string macAddress)
+        public Host(string name, string ipAddress, string macAddress) : this()
         {
             Name = name;
             IpAddress = ipAddress;
             MacAddress = macAddress;
         }
 
-        public Host(HostDb hostDb)
+        public Host(HostDb hostDb) : this()
         {
             Name = hostDb.Name;
             IpAddress = hostDb.IpAddress;
             MacAddress = hostDb.MacAddress;
             Status = HostStatus.Unknown;
+        }
+
+        public void GenerateNewKeys()
+        {
+            var keys = RsaEngine.GetKeys();
+            PrivateKey = keys[0];
+            PublicKey = keys[1];
         }
         
         public event PropertyChangedEventHandler PropertyChanged;

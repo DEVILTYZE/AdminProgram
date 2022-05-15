@@ -1,13 +1,24 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Net.NetworkInformation;
 using System.Text;
-using AdminProgram.Models;
 
-namespace AdminProgram.Helpers
+namespace SecurityChannel
 {
+    public enum HostStatus
+    {
+        On,
+        Off,
+        Loading,
+        Unknown
+    }
+    
     public static class NetHelper
     {
         public const int Port = 4022;
+        public const int MessageCommandPort = 3702;
+        public const int Timeout = 5000;
+        public const int LoadTimeout = 60000;
         
         public static byte[] GetMagicPacket(string mac)
         {
@@ -21,7 +32,7 @@ namespace AdminProgram.Helpers
         public static HostStatus Ping(string ipAddress)
         {
             var pingSender = new Ping();
-            var buffer = Encoding.ASCII.GetBytes("abcdabcdabcdabcdabcdabcdabcdabcd");
+            var buffer = Encoding.Unicode.GetBytes("abcdabcdabcdabcdabcdabcdabcdabcd");
             var reply = pingSender.Send(ipAddress, 120, buffer, new PingOptions { DontFragment = true });
 
             if (reply is null)
@@ -33,6 +44,21 @@ namespace AdminProgram.Helpers
                 IPStatus.TimedOut => HostStatus.Off,
                 _ => HostStatus.Unknown
             };
+        }
+        
+        public static string GetMacAddress()
+        {
+            var interfaces = NetworkInterface.GetAllNetworkInterfaces();
+
+            foreach (var adapter in interfaces)
+            {
+                var mac = adapter.GetPhysicalAddress().ToString();
+
+                if (!string.IsNullOrEmpty(mac))
+                    return mac;
+            }
+
+            throw new Exception("Мак адрес не существует");
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using CommandLib.Annotations;
 using SecurityChannel;
@@ -17,6 +17,8 @@ namespace CommandLib.Commands
     [Serializable]
     public class CommandResult : ISendable
     {
+        private static JsonSerializerOptions _options = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+        
         public CommandResultStatus Status { get; }
         public object Data { get; }
         public RsaKey PublicKey { get; set; }
@@ -27,18 +29,9 @@ namespace CommandLib.Commands
             Data = data;
         }
 
-        public byte[] ToBytes()
-        {
-            var json = JsonSerializer.Serialize(this);
-            
-            return Encoding.Default.GetBytes(json);
-        }
+        public byte[] ToBytes() => JsonSerializer.SerializeToUtf8Bytes(this, _options);
 
-        public static CommandResult FromBytes(byte[] data)
-        {
-            var str = Encoding.Default.GetString(data);
-
-            return JsonSerializer.Deserialize<CommandResult>(str);
-        }
+        public static CommandResult FromBytes(byte[] data) 
+            => JsonSerializer.Deserialize<CommandResult>(data, _options);
     }
 }

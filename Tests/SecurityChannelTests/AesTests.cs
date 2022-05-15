@@ -31,12 +31,12 @@ namespace Tests.SecurityChannelTests
         public void InputDataTest()
         {
             const string str = "EnCrYpT mE!!1!";
-            var data = Encoding.Default.GetBytes(str);
+            var data = Encoding.Unicode.GetBytes(str);
             var key = Enumerable.Repeat((byte)12, 32).ToArray();
                 //AesEngine.GetKey();
             var encrypted = AesEngine.Encrypt(data, key);
             
-            Assert.AreEqual(str, Encoding.Default.GetString(AesEngine.Decrypt(encrypted, key)));
+            Assert.AreEqual(str, Encoding.Unicode.GetString(AesEngine.Decrypt(encrypted, key)));
         }
     }
 }

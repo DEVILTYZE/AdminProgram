@@ -18,7 +18,7 @@ namespace Tests.CommandLibTests
         {
             const string str = "Sample text";
             _keys = RsaEngine.GetKeys();
-            _command = new MessageCommand(Encoding.Default.GetBytes(str), _keys[1]);
+            _command = new MessageCommand(Encoding.Unicode.GetBytes(str), _keys[1]);
             _jsonCommand = JsonSerializer.Serialize((MessageCommand)_command);
         }
 

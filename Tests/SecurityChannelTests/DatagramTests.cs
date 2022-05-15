@@ -19,13 +19,14 @@ namespace Tests.SecurityChannelTests
         {
             _aesKey = AesEngine.GetKey();
             _rsaKeys = RsaEngine.GetKeys();
-            _datagram = new Datagram(Encoding.Default.GetBytes(Data), _aesKey, _rsaKeys[1], Data.GetType().FullName);
+            _datagram = new Datagram(Encoding.Unicode.GetBytes(Data), _aesKey, _rsaKeys[1], 
+                Data.GetType().FullName, true);
             _jsonDatagram = JsonSerializer.Serialize(_datagram);
         }
 
         [Test]
         public void CreateDatagram()
-            => Assert.AreEqual(Data, Encoding.Default.GetString(_datagram.GetData(_rsaKeys[0])));
+            => Assert.AreEqual(Data, Encoding.Unicode.GetString(_datagram.GetData(_rsaKeys[0])));
         
         [Test]
         public void ByteArrayDatagram()

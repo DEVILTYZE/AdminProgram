@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Windows.Data;
 using AdminProgram.Models;
+using SecurityChannel;
 
 namespace AdminProgram.Converters
 {

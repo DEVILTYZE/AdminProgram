@@ -10,4 +10,10 @@
       <ProjectReference Include="..\CommandLib\CommandLib.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Update="Host.Properties.cs">
+        <DependentUpon>Host.cs</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
 </Project>

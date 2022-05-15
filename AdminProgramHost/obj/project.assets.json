@@ -2,15 +2,6 @@
   "version": 3,
   "targets": {
     "net5.0-windows7.0": {
-      "GostCryptography/2.0.9": {
-        "type": "package",
-        "compile": {
-          "lib/net452/GostCryptography.dll": {}
-        },
-        "runtime": {
-          "lib/net452/GostCryptography.dll": {}
-        }
-      },
       "Microsoft.NETCore.Platforms/1.1.0": {
         "type": "package",
         "compile": {
@@ -489,7 +480,6 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v5.0",
         "dependencies": {
-          "GostCryptography": "2.0.9",
           "System.Security.Cryptography.Algorithms": "4.3.1"
         },
         "compile": {
@@ -502,21 +492,6 @@
     }
   },
   "libraries": {
-    "GostCryptography/2.0.9": {
-      "sha512": "gLD1GNsjulGG7MgHwgk5SVixZpEg4TWYqp9PpwrJ718ZtwXUDk2i7KXVmFoJpLKb/2XZJNtet6gxSvs2hXwAdg==",
-      "type": "package",
-      "path": "gostcryptography/2.0.9",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "gostcryptography.2.0.9.nupkg.sha512",
-        "gostcryptography.nuspec",
-        "lib/net40/GostCryptography.dll",
-        "lib/net40/GostCryptography.xml",
-        "lib/net452/GostCryptography.dll",
-        "lib/net452/GostCryptography.xml"
-      ]
-    },
     "Microsoft.NETCore.Platforms/1.1.0": {
       "sha512": "kz0PEW2lhqygehI/d6XsPCQzD7ff7gUJaVGPVETX611eadGsA3A877GdSlU0LRVMCTH/+P3o2iDTak+S08V2+A==",
       "type": "package",
@@ -2184,20 +2159,8 @@
             "privateAssets": "none"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.400\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.402\\RuntimeIdentifierGraph.json"
       }
     }
-  },
-  "logs": [
-    {
-      "code": "NU1701",
-      "level": "Warning",
-      "warningLevel": 1,
-      "message": "Package 'GostCryptography 2.0.9' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8' instead of the project target framework 'net5.0-windows7.0'. This package may not be fully compatible with your project.",
-      "libraryId": "GostCryptography",
-      "targetGraphs": [
-        "net5.0-windows7.0"
-      ]
-    }
-  ]
+  }
 }

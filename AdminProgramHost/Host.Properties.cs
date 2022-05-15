@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Threading;
 using AdminProgramHost.Annotations;
 
@@ -11,12 +12,9 @@ namespace AdminProgramHost
         private const int Port = 8001;
         private static readonly string MacDatPath = Environment.SpecialFolder.UserProfile + "\\mac.dat";
 
-        private string _name;
-        private string _ipAddress;
-        private string _macAddress;
-        
-        private string _mainMacAddress;
+        private string _name, _ipAddress, _macAddress, _mainMacAddress;
         private Thread _threadReceiveData;
+        private RSAParameters _privateKey, _publicKey;
 
         public string Name
         {

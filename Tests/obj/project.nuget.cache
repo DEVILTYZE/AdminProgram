@@ -1,11 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "TPj9fT+wnBsVIHBwvT8Y5S67/81lbFqQuuI0692EEoAGEhm4NMjMEB33RwgDx1tqKEhCuim+N6eT/NS3KFLcjA==",
+  "dgSpecHash": "sObC+U9SY5DjusaYIBtULMIipC0FIB3Jpu+5HiIWhVkadjr/tqVheiGWfEwLuoIFwQD3E9kchAo3V3RJUM9xIw==",
   "success": true,
   "projectFilePath": "E:\\Disk D\\ProjectsCode\\C#\\Diplom\\AdminProgram\\Tests\\Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\user\\.nuget\\packages\\coverlet.collector\\3.0.2\\coverlet.collector.3.0.2.nupkg.sha512",
-    "C:\\Users\\user\\.nuget\\packages\\gostcryptography\\2.0.9\\gostcryptography.2.0.9.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\microsoft.codecoverage\\16.9.4\\microsoft.codecoverage.16.9.4.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\microsoft.csharp\\4.0.1\\microsoft.csharp.4.0.1.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\microsoft.dotnet.internalabstractions\\1.0.0\\microsoft.dotnet.internalabstractions.1.0.0.nupkg.sha512",
@@ -90,16 +89,5 @@
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\system.xml.xpath\\4.3.0\\system.xml.xpath.4.3.0.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\system.xml.xpath.xmldocument\\4.3.0\\system.xml.xpath.xmldocument.4.3.0.nupkg.sha512"
   ],
-  "logs": [
-    {
-      "code": "NU1701",
-      "level": "Warning",
-      "warningLevel": 1,
-      "message": "Package 'GostCryptography 2.0.9' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8' instead of the project target framework 'net5.0'. This package may not be fully compatible with your project.",
-      "libraryId": "GostCryptography",
-      "targetGraphs": [
-        "net5.0"
-      ]
-    }
-  ]
+  "logs": []
 }

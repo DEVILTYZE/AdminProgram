@@ -7,7 +7,8 @@
         xmlns:viewModels="clr-namespace:AdminProgram.ViewModels"
         mc:Ignorable="d"
         Title="MainWindow" Height="800" Width="1500"
-        KeyDown="MainWindow_OnKeyDown">
+        KeyDown="MainWindow_OnKeyDown"
+        Closed="MainWindow_OnClosed">
     <Window.DataContext>
         <viewModels:HostViewModel />
     </Window.DataContext>
@@ -31,14 +32,14 @@
         </Grid.ColumnDefinitions>
         <Button x:Name="ScanButton"
                 Style="{StaticResource {x:Type Button}}"
-                Content="{Binding IsScanButtonEnabled, Converter={StaticResource ScanButtonText}}"
-                IsEnabled="{Binding IsScanButtonEnabled}"
+                Content="{Binding ScanThreads.IsDead, Converter={StaticResource ScanButtonText}}"
+                IsEnabled="{Binding ScanThreads.IsDead}"
                 Click="ScanButton_OnClick"/>
         <Button Grid.Row="0" Grid.Column="1" 
                 x:Name="RefreshAllButton"
                 Style="{StaticResource {x:Type Button}}"
-                Content="{Binding IsRefreshButtonEnabled, Converter={StaticResource RefreshButtonText}}"
-                IsEnabled="{Binding IsRefreshButtonEnabled}"
+                Content="{Binding RefreshThreads.IsDead, Converter={StaticResource RefreshButtonText}}"
+                IsEnabled="{Binding RefreshThreads.IsDead}"
                 Click="RefreshAllButton_OnClick"/>
         <TextBox Grid.Row="0" Grid.Column="2" 
                  x:Name="SearchBox" 
@@ -86,10 +87,11 @@
             </StackPanel>
             <Button Style="{StaticResource {x:Type Button}}"
                     Content="{Binding SelectedHost.Status, Converter={StaticResource PowerOnButtonText}}"
-                    IsEnabled="{Binding SelectedHost.Status}"
+                    IsEnabled="{Binding SelectedHost.Status, Converter={StaticResource StatusBool}}"
                     Click="PowerButton_OnClick" />
             <Button Style="{StaticResource {x:Type Button}}"
                     Content="Обновить статус"
+                    IsEnabled="{Binding SelectedHost.Status, Converter={StaticResource StatusBool}}"
                     Click="RefreshButton_OnClick"/>
         </StackPanel>
     </Grid>

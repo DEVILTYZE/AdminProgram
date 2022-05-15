@@ -12,34 +12,36 @@ namespace AdminProgram.ViewModels
     {
         private readonly object _locker = new();
         private readonly IPHostEntry _currentHost;
-        private readonly ThreadList[] _threads = new ThreadList[2];
-        
+        //private readonly ThreadList[] _threads = new ThreadList[2];
+
         private Dictionary<string, string> _addresses;
         private Host _selectedHost;
         private AdminContext _db;
-        private bool _isScanButtonEnabled, _isRefreshButtonEnabled;
-        
-        public ObservableCollection<Host> Hosts { get; set; }
-        
-        public bool IsScanButtonEnabled 
-        { 
-            get => _isScanButtonEnabled;
-            set
-            {
-                _isScanButtonEnabled = value;
-                OnPropertyChanged(nameof(IsScanButtonEnabled));
-            } 
-        }
+        //private bool _isScanButtonEnabled, _isRefreshButtonEnabled;
 
-        public bool IsRefreshButtonEnabled
-        {
-            get => _isRefreshButtonEnabled;
-            set
-            {
-                _isRefreshButtonEnabled = value;
-                OnPropertyChanged(nameof(IsRefreshButtonEnabled));
-            }
-        }
+        public ObservableCollection<Host> Hosts { get; set; }
+        public ThreadList ScanThreads { get; private set; }
+        public ThreadList RefreshThreads { get; private set; }
+        
+        // public bool IsScanButtonEnabled 
+        // { 
+        //     get => _isScanButtonEnabled;
+        //     set
+        //     {
+        //         _isScanButtonEnabled = value;
+        //         OnPropertyChanged(nameof(IsScanButtonEnabled));
+        //     } 
+        // }
+        //
+        // public bool IsRefreshButtonEnabled
+        // {
+        //     get => _isRefreshButtonEnabled;
+        //     set
+        //     {
+        //         _isRefreshButtonEnabled = value;
+        //         OnPropertyChanged(nameof(IsRefreshButtonEnabled));
+        //     }
+        // }
         
         public Host SelectedHost
         {
