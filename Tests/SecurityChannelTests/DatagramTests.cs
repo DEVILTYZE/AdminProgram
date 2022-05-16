@@ -20,7 +20,7 @@ namespace Tests.SecurityChannelTests
             _aesKey = AesEngine.GetKey();
             _rsaKeys = RsaEngine.GetKeys();
             _datagram = new Datagram(Encoding.Unicode.GetBytes(Data), _aesKey, _rsaKeys[1], 
-                Data.GetType().FullName, true);
+                Data.GetType().FullName);
             _jsonDatagram = JsonSerializer.Serialize(_datagram);
         }
 

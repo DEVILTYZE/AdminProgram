@@ -9,6 +9,8 @@ namespace SecurityChannel
     [Serializable]
     public class Datagram
     {
+        public const int Length = 65507;
+        
         private static JsonSerializerOptions _options = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
         
         [JsonIgnore]
@@ -28,7 +30,7 @@ namespace SecurityChannel
             IsEncrypted = isEncrypted;
         }
 
-        public Datagram(byte[] data, byte[] aesKey, RSAParameters rsaPublicKey, string typeName, bool isEncrypted)
+        public Datagram(byte[] data, byte[] aesKey, RSAParameters rsaPublicKey, string typeName, bool isEncrypted = true)
         {
             if (isEncrypted)
             {

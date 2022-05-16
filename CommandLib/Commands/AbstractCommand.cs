@@ -35,6 +35,8 @@ namespace CommandLib.Commands
 
         public abstract CommandResult Execute();
 
+        public virtual void Abort() { /* Здесь ничего не происходит. */ }
+
         public byte[] ToBytes() => JsonSerializer.SerializeToUtf8Bytes(this, _options);
 
         public static ICommand FromBytes(byte[] data, Type type) =>

@@ -7,13 +7,13 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
 using AdminProgram.Annotations;
 using AdminProgram.Models;
+using CommandLib;
 using CommandLib.Commands;
 using SecurityChannel;
 
@@ -81,8 +81,7 @@ namespace AdminProgram.ViewModels
                 throw new ArgumentException("Host is null");
 
             var client = new UdpClient();
-            client.Client.ReceiveTimeout = NetHelper.Timeout;
-            var publicKey = GetPublicKeyOrDefault(client, host.RouteIp);
+            var publicKey = NetHelper.GetPublicKeyOrDefault(client, host.RouteIp, NetHelper.Timeout);
             host.Status = publicKey.HasValue ? HostStatus.On : NetHelper.Ping(host.IpAddress);
         }
 
@@ -91,22 +90,21 @@ namespace AdminProgram.ViewModels
             SelectedHost.Status = HostStatus.Loading;
             var client = new UdpClient();
             var magicPacket = NetHelper.GetMagicPacket(SelectedHost.MacAddress);
-            var remoteIp = new IPEndPoint(IPAddress.Parse(SelectedHost.IpAddress), NetHelper.Port);
+            var remoteIp = SelectedHost.RouteIp;
 
             try
             {
                 client.Send(magicPacket, magicPacket.Length, new IPEndPoint(IPAddress.Broadcast, NetHelper.Port));
-                client.Client.ReceiveTimeout = NetHelper.LoadTimeout;
-                var publicKey = GetPublicKeyOrDefault(client, remoteIp);
+                var publicKey = NetHelper.GetPublicKeyOrDefault(client, remoteIp, NetHelper.LoadTimeout);
 
                 if (!publicKey.HasValue)
                     return false;
 
-                SelectedHost.GenerateNewKeys();
+                SelectedHost.GenerateKeys();
                 
                 var command = new MessageCommand(NetHelper.GetMacAddress(), SelectedHost.PublicKey) { IsSystem = true };
                 var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), publicKey.Value,
-                    typeof(MessageCommand).FullName, true);
+                    typeof(MessageCommand).FullName);
                 var datagramBytes = datagram.ToBytes();
                 client.Send(datagramBytes, datagramBytes.Length, remoteIp);
                 
@@ -235,35 +233,6 @@ namespace AdminProgram.ViewModels
 
             foreach (Match match in Regex.Matches(cmdOutput, pattern))
                 _addresses.Add(match.Groups[1].Value, match.Groups[3].Value.Replace('-', ':'));
-        }
-
-        private static RSAParameters? GetPublicKeyOrDefault(UdpClient client, IPEndPoint remoteIp)
-        {
-            var nullKey = new RSAParameters();
-            var command = new MessageCommand(string.Empty, nullKey);
-            var datagram = new Datagram(command.ToBytes(), null, nullKey, typeof(MessageCommand).FullName,
-                false);
-            var datagramBytes = datagram.ToBytes();
-            byte[] data;
-
-            client.Send(datagramBytes, datagramBytes.Length, remoteIp);
-
-            try
-            {
-                data = client.Receive(ref remoteIp);
-            }
-            catch (SocketException)
-            {
-                return null;
-            }
-
-            var receivedDatagram = Datagram.FromBytes(data);
-            var result = CommandResult.FromBytes(receivedDatagram.GetData(nullKey));
-
-            if (result.Status == CommandResultStatus.Failed)
-                return null;
-
-            return result.PublicKey.GetKey();
         }
 
         private void InitializeDb()

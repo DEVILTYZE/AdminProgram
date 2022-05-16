@@ -14,6 +14,13 @@ namespace SecurityChannel
             return new[] { privateKey, publicKey };
         }
 
+        public static void GenerateKeys(out RSAParameters privateKey, out RSAParameters publicKey)
+        {
+            var keys = RsaEngine.GetKeys();
+            privateKey = keys[0];
+            publicKey = keys[1];
+        }
+
         public static byte[] Encrypt(byte[] data, RSAParameters publicKey)
         {
             if (data is null || data.Length == 0)

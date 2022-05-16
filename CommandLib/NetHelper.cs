@@ -1,9 +1,14 @@
 ﻿using System;
 using System.Linq;
+using System.Net;
 using System.Net.NetworkInformation;
+using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
+using CommandLib.Commands;
+using SecurityChannel;
 
-namespace SecurityChannel
+namespace CommandLib
 {
     public enum HostStatus
     {
@@ -59,6 +64,35 @@ namespace SecurityChannel
             }
 
             throw new Exception("Мак адрес не существует");
+        }
+        
+        public static RSAParameters? GetPublicKeyOrDefault(UdpClient client, IPEndPoint remoteIp, int receiveTimeout)
+        {
+            client.Client.ReceiveTimeout = receiveTimeout;
+            var nullKey = new RSAParameters();
+            var command = new MessageCommand(string.Empty, nullKey);
+            var datagram = new Datagram(command.ToBytes(), null, nullKey, typeof(MessageCommand).FullName, false);
+            var datagramBytes = datagram.ToBytes();
+            byte[] data;
+
+            client.Send(datagramBytes, datagramBytes.Length, remoteIp);
+
+            try
+            {
+                data = client.Receive(ref remoteIp);
+            }
+            catch (SocketException)
+            {
+                return null;
+            }
+
+            var receivedDatagram = Datagram.FromBytes(data);
+            var result = CommandResult.FromBytes(receivedDatagram.GetData(nullKey));
+
+            if (result.Status == CommandResultStatus.Failed)
+                return null;
+
+            return result.PublicKey.GetKey();
         }
     }
 }

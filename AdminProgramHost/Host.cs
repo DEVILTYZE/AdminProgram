@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
+using CommandLib;
 using CommandLib.Commands;
 using Microsoft.Win32;
 using SecurityChannel;
@@ -36,7 +37,7 @@ namespace AdminProgramHost
                 IpAddress = endPoint.Address.ToString();
 
             MacAddress = NetHelper.GetMacAddress();
-            GenerateNewKeys();
+            RsaEngine.GenerateKeys(out _privateKey, out _publicKey);
 
             if (_threadReceiveData.IsAlive)
                 _threadReceiveData.Join();
@@ -44,8 +45,6 @@ namespace AdminProgramHost
             _threadReceiveData = new Thread(OpenClient);
             _threadReceiveData.Start();
         }
-
-        
 
         /// <summary>
         /// Метод включения клиента в режим прослушки сети.
@@ -75,7 +74,7 @@ namespace AdminProgramHost
                         : command.Execute();
 
                     // Шаг 5: обновляем ключи.
-                    GenerateNewKeys();
+                    RsaEngine.GenerateKeys(out _privateKey, out _publicKey);
 
                     // Шаг 6: добавляем новый публичный ключ к результату.
                     result.PublicKey = new RsaKey(_publicKey);
@@ -172,13 +171,6 @@ namespace AdminProgramHost
             }
 
             return true;
-        }
-
-        private void GenerateNewKeys()
-        {
-            var keys = RsaEngine.GetKeys();
-            _privateKey = keys[0];
-            _publicKey = keys[1];
         }
     }
 }

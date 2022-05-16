@@ -5,6 +5,7 @@ using System.Net;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using AdminProgram.Annotations;
+using CommandLib;
 using SecurityChannel;
 
 namespace AdminProgram.Models
@@ -80,7 +81,7 @@ namespace AdminProgram.Models
             }
         }
 
-        private Host() => GenerateNewKeys();
+        private Host() => GenerateKeys();
         
         public Host(string name, string ipAddress, string macAddress) : this()
         {
@@ -97,13 +98,13 @@ namespace AdminProgram.Models
             Status = HostStatus.Unknown;
         }
 
-        public void GenerateNewKeys()
+        public void GenerateKeys()
         {
-            var keys = RsaEngine.GetKeys();
-            PrivateKey = keys[0];
-            PublicKey = keys[1];
+            RsaEngine.GenerateKeys(out var privateKey, out var publicKey);
+            PrivateKey = privateKey;
+            PublicKey = publicKey;
         }
-        
+
         public event PropertyChangedEventHandler PropertyChanged;
         [NotifyPropertyChangedInvocator]
         private void OnPropertyChanged([CallerMemberName] string propertyName = null)

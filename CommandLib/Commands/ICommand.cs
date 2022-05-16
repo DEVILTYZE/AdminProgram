@@ -7,6 +7,7 @@ namespace CommandLib.Commands
         RSAParameters RsaPublicKey { get; }
         object Data { set; }
         CommandResult Execute();
+        void Abort();
         byte[] ToBytes();
     }
 }

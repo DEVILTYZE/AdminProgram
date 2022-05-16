@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using AdminProgram.ViewModels;
+using CommandLib;
 using SecurityChannel;
 
 namespace AdminProgram.Views
