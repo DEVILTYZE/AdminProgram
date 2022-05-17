@@ -11,21 +11,10 @@ namespace CommandLib.Commands.RemoteCommandItems
     public class ScreenMatrix
     {
         private readonly ScreenPixel[,] _pixels;
-
-        public int Height => _pixels.GetLength(0);
-        public int Width => _pixels.GetLength(1);
+        private int Height => _pixels.GetLength(0);
+        private int Width => _pixels.GetLength(1);
 
         public ScreenMatrix(int height, int width) => _pixels = new ScreenPixel[height, width];
-        
-        /// <summary>
-        /// Обновление пикселей в ScreenMatrix.
-        /// </summary>
-        /// <param name="pixels">Массив обновленных пикселей.</param>
-        public void UpdateScreen(IEnumerable<ScreenPixel> pixels)
-        {
-            foreach (var pixel in pixels)
-                _pixels[pixel.Y, pixel.X].SetPixel(pixel);
-        }
         
         /// <summary>
         /// Обновление пикселей в ScreenMatrix и на форме.
@@ -48,10 +37,16 @@ namespace CommandLib.Commands.RemoteCommandItems
         /// <param name="screen"></param>
         public void UpdateScreen(Bitmap screen)
         {
+            if (_pixels[1, 0].Y == 0)
+            {
+                SetupAllPixels(screen);
+                return;
+            }
+            
             for (var i = 0; i < Height; ++i)
             for (var j = 0; j < Width; ++j)
             {
-                var pixel = screen.GetPixel(i, j);
+                var pixel = screen.GetPixel(j, i);
 
                 if (_pixels[i, j].Equals(pixel)) 
                     continue;
@@ -68,6 +63,7 @@ namespace CommandLib.Commands.RemoteCommandItems
         public byte[] GetUpdatedPixelsBytes()
         {
             var array = _pixels.Cast<ScreenPixel>().Where(pixel => pixel.IsUpdated).ToArray();
+            UpdateToFalse(array);
             var resultArray = BitConverter.GetBytes(array.Length);
             var result = resultArray.AsEnumerable();
             result = array.Aggregate(result, (current, pixel) => current.Concat(pixel.ToBytes()));
@@ -75,7 +71,7 @@ namespace CommandLib.Commands.RemoteCommandItems
             return result.ToArray();
         }
 
-        public static ScreenPixel[] GetScreenPixelsFromBytesOrDefault(byte[] data)
+        public static ScreenPixel[] GetPixelsFromBytesOrDefault(byte[] data)
         {
             var length = BitConverter.ToInt32(data.AsSpan()[0..4]);
             data = data.Skip(4).ToArray();
@@ -90,6 +86,32 @@ namespace CommandLib.Commands.RemoteCommandItems
                     data.AsSpan()[(ScreenPixel.OnePixelLength * i)..(ScreenPixel.OnePixelLength * (i + 1))].ToArray());
 
             return pixels;
+        }
+        
+        /// <summary>
+        /// Обновление пикселей в ScreenMatrix.
+        /// </summary>
+        /// <param name="pixels">Массив обновленных пикселей.</param>
+        private void UpdateScreen(IEnumerable<ScreenPixel> pixels)
+        {
+            foreach (var pixel in pixels)
+                _pixels[pixel.Y, pixel.X].SetPixel(pixel);
+        }
+
+        private void SetupAllPixels(Bitmap screen)
+        {
+            for (var i = 0; i < Height; ++i)
+            for (var j = 0; j < Width; ++j)
+            {
+                _pixels[i, j] = new ScreenPixel(j, i) { IsUpdated = true };
+                _pixels[i, j].SetPixel(screen.GetPixel(j, i));
+            }
+        }
+
+        private void UpdateToFalse(IEnumerable<ScreenPixel> array)
+        {
+            foreach (var pixel in array)
+                _pixels[pixel.Y, pixel.X].IsUpdated = false;
         }
     }
 }

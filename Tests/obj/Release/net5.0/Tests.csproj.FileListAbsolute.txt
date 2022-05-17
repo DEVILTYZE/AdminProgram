@@ -102,6 +102,10 @@ E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\obj\Release\net5.0\Tests.dll
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\obj\Release\net5.0\ref\Tests.dll
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\obj\Release\net5.0\Tests.pdb
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\obj\Release\net5.0\Tests.genruntimeconfig.cache
-E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\bin\Release\net5.0\GostCryptography.dll
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\bin\Release\net5.0\CommandLib.dll
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\bin\Release\net5.0\CommandLib.pdb
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\bin\Release\net5.0\Microsoft.Win32.SystemEvents.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\bin\Release\net5.0\System.Drawing.Common.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\bin\Release\net5.0\runtimes\win\lib\netcoreapp3.1\Microsoft.Win32.SystemEvents.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\bin\Release\net5.0\runtimes\unix\lib\netcoreapp3.1\System.Drawing.Common.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\bin\Release\net5.0\runtimes\win\lib\netcoreapp3.1\System.Drawing.Common.dll

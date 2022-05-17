@@ -12,4 +12,3 @@ E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\CommandLib\obj\Release\net5.0\ref\
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\CommandLib\obj\Release\net5.0\CommandLib.pdb
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\CommandLib\bin\Release\net5.0\SecurityChannel.dll
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\CommandLib\bin\Release\net5.0\SecurityChannel.pdb
-E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\CommandLib\obj\Release\net5.0\CommandLib.csproj.CopyComplete

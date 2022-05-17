@@ -62,7 +62,7 @@ namespace CommandLib.Commands.RemoteCommandItems
                 Rgba[i] = pixel.Rgba[i];
         }
 
-        public byte[] ToBytes()
+        public IEnumerable<byte> ToBytes()
         {
             var x = BitConverter.GetBytes(X);
             var y = BitConverter.GetBytes(Y);

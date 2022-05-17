@@ -60,8 +60,14 @@ namespace CommandLib.Commands.RemoteCommandItems
                 var imageBytes = _screen.GetUpdatedPixelsBytes();
                 var datagram = new Datagram(imageBytes, AesEngine.GetKey(), _publicKey, typeof(byte[]).FullName);
                 var resultBytes = datagram.ToBytes();
-                var countOfBlocks = (byte)(resultBytes.Length / Datagram.Length);
-                resultBytes = new[] { countOfBlocks }.Concat(resultBytes).ToArray();
+                
+                var countOfBlocks = resultBytes.Length % Datagram.Length == 0 
+                    ? (byte)(resultBytes.Length / Datagram.Length) 
+                    : (byte)(resultBytes.Length / Datagram.Length + 1);
+                
+                resultBytes = new[] { countOfBlocks }.Concat(BitConverter.GetBytes(size.Height)).Concat(
+                    BitConverter.GetBytes(size.Width)).Concat(resultBytes).ToArray();
+                
                 var listBytes = countOfBlocks > 1 
                     ? CutImageBytes(resultBytes, countOfBlocks) 
                     : new List<byte[]>(new[] { resultBytes });

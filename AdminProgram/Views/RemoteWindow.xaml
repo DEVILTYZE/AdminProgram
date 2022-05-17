@@ -1,0 +1,22 @@
+﻿<Window x:Class="AdminProgram.Views.RemoteWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:local="clr-namespace:AdminProgram.Views"
+        xmlns:viewModels="clr-namespace:AdminProgram.ViewModels"
+        mc:Ignorable="d"
+        Title="RemoteWindow" Height="450" Width="800"
+        Closed="RemoteWindow_OnClosed"
+        Loaded="RemoteWindow_OnLoaded">
+    <Window.DataContext>
+        <viewModels:RemoteViewModel />
+    </Window.DataContext>
+    <Grid>
+        <InkCanvas>
+            <Image x:Name="ScreenImage" 
+                   Source="{Binding ImageScreen}" 
+                   SourceUpdated="ScreenImage_OnSourceUpdated" />
+        </InkCanvas>
+    </Grid>
+</Window>
