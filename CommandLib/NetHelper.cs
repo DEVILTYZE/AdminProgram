@@ -20,10 +20,11 @@ namespace CommandLib
     
     public static class NetHelper
     {
-        public const int Port = 4022;
-        public const int MessageCommandPort = 3702;
+        public const int AutoPort = 0;
+        public const int UdpPort = 30003;
+        public const int FtpPort = 20;
         public const int Timeout = 5000;
-        public const int LoadTimeout = 60000;
+        public const int LoadTimeout = 30000;
         
         public static byte[] GetMagicPacket(string mac)
         {
@@ -69,9 +70,8 @@ namespace CommandLib
         public static RSAParameters? GetPublicKeyOrDefault(UdpClient client, IPEndPoint remoteIp, int receiveTimeout)
         {
             client.Client.ReceiveTimeout = receiveTimeout;
-            var nullKey = new RSAParameters();
-            var command = new MessageCommand(string.Empty, nullKey);
-            var datagram = new Datagram(command.ToBytes(), null, nullKey, typeof(MessageCommand).FullName, false);
+            var command = new MessageCommand(Array.Empty<byte>());
+            var datagram = new Datagram(command.ToBytes(), null, typeof(MessageCommand).FullName);
             var datagramBytes = datagram.ToBytes();
             byte[] data;
 
@@ -87,7 +87,7 @@ namespace CommandLib
             }
 
             var receivedDatagram = Datagram.FromBytes(data);
-            var result = CommandResult.FromBytes(receivedDatagram.GetData(nullKey));
+            var result = CommandResult.FromBytes(receivedDatagram.GetData());
 
             if (result.Status == CommandResultStatus.Failed)
                 return null;

@@ -35,3 +35,11 @@ E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-wi
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-windows\SecurityChannel.dll
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-windows\CommandLib.pdb
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-windows\SecurityChannel.pdb
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-windows\Microsoft.Win32.SystemEvents.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-windows\System.Drawing.Common.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-windows\runtimes\win\lib\netcoreapp3.1\Microsoft.Win32.SystemEvents.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-windows\runtimes\unix\lib\netcoreapp3.1\System.Drawing.Common.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-windows\runtimes\win\lib\netcoreapp3.1\System.Drawing.Common.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\obj\Release\net5.0-windows\Views\RemoteWindow.g.cs
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\obj\Release\net5.0-windows\Views\RemoteWindow.baml
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\obj\Release\net5.0-windows\AdminProgram.csproj.CopyComplete

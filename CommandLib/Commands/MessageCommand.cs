@@ -12,7 +12,7 @@ namespace CommandLib.Commands
         [JsonConstructor]
         public MessageCommand() { }
 
-        public MessageCommand(object data, RSAParameters publicKey) 
+        public MessageCommand(byte[] data, RSAParameters? publicKey = null) 
             : base(ConstHelper.MessageCommandId, ConstHelper.MessageCommandString, data, publicKey) { }
 
         public override CommandResult Execute() => new(CommandResultStatus.Successed, Data);

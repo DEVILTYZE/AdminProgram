@@ -1,5 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Net;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading;
@@ -12,9 +14,15 @@ namespace AdminProgramHost
         private const int Port = 8001;
         private static readonly string MacDatPath = Environment.SpecialFolder.UserProfile + "\\mac.dat";
 
-        private string _name, _ipAddress, _macAddress, _mainMacAddress;
+        private static readonly string LogsPath =
+            Environment.CurrentDirectory + "\\logs" + DateTime.Now.ToString("yyyyMMddHHmmss") + ".txt";
+
+        private string _name, _ipAddress, _macAddress, _mainMacAddress, _logs;
         private Thread _threadReceiveData;
         private RSAParameters _privateKey, _publicKey;
+        private UdpClient _client;
+        private bool _forceClose;
+        private IPEndPoint _remoteIp;
 
         public string Name
         {
@@ -43,6 +51,16 @@ namespace AdminProgramHost
             {
                 _macAddress = value;
                 OnPropertyChanged(nameof(MacAddress));
+            }
+        }
+
+        public string Logs
+        {
+            get => _logs;
+            set
+            {
+                _logs = value;
+                OnPropertyChanged(nameof(Logs));
             }
         }
         

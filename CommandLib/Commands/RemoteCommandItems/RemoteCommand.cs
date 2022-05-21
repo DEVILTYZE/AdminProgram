@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using CommandLib.Annotations;
 using SecurityChannel;
@@ -14,11 +15,13 @@ namespace CommandLib.Commands.RemoteCommandItems
     [Serializable]
     public class RemoteCommand : AbstractCommand
     {
+        private const string DataError = "Невозможно получить IPEndPoint или RSAParameters";
+        
         private bool _isActive;
         private RSAParameters _publicKey;
         private ScreenMatrix _screen;
 
-        public RemoteCommand(object data, RSAParameters publicKey)
+        public RemoteCommand(byte[] data, RSAParameters? publicKey = null)
             : base(ConstHelper.StreamCommandId, ConstHelper.StreamCommandString, data, publicKey) { }
 
         public override CommandResult Execute()
@@ -28,17 +31,17 @@ namespace CommandLib.Commands.RemoteCommandItems
 
             try
             {
-                (remoteIp, _publicKey) = ((IPEndPoint, RSAParameters))Data;
+                (remoteIp, _publicKey) = RemoteObject.FromBytes(Data).GetData();
             }
             catch (Exception)
             {
-                return new CommandResult(CommandResultStatus.Failed, "Невозможно получить IPEndPoint или RSAParameters");
+                return new CommandResult(CommandResultStatus.Failed, Encoding.Unicode.GetBytes(DataError));
             }
 
             var thread = new Thread(StartRemoteConnection);
             thread.Start(remoteIp);
 
-            return new CommandResult(CommandResultStatus.Successed, string.Empty);
+            return new CommandResult(CommandResultStatus.Successed, Array.Empty<byte>());
         }
 
         public override void Abort() => _isActive = false;
@@ -58,7 +61,7 @@ namespace CommandLib.Commands.RemoteCommandItems
                 _screen.UpdateScreen(image);
                 
                 var imageBytes = _screen.GetUpdatedPixelsBytes();
-                var datagram = new Datagram(imageBytes, AesEngine.GetKey(), _publicKey, typeof(byte[]).FullName);
+                var datagram = new Datagram(imageBytes, AesEngine.GetKey(), typeof(byte[]), _publicKey);
                 var resultBytes = datagram.ToBytes();
                 
                 var countOfBlocks = resultBytes.Length % Datagram.Length == 0 

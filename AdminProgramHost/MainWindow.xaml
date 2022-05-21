@@ -7,16 +7,22 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="400" Width="400"
         Closed="MainWindow_OnClosed"
-        Visibility="Hidden"
-        ShowInTaskbar="False">
+        Loaded="MainWindow_OnLoaded"
+        Visibility="Visible"
+        ShowInTaskbar="True">
     <Window.DataContext>
         <local:Host />
     </Window.DataContext>
     <Grid>
         <StackPanel>
-            <TextBlock Text="{Binding Name, StringFormat='Имя ПК: {0}'}" />
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding Name, StringFormat='Имя ПК: {0}'}" Margin="0, 0, 20, 0" />
+                <Button Content="Удалить из автозапуска" Click="ButtonBase_OnClick" />
+            </StackPanel>
             <TextBlock Text="{Binding IpAddress, StringFormat='IP-адрес: {0}'}" />
             <TextBlock Text="{Binding MacAddress, StringFormat='MAC-адрес: {0}'}" />
+            <TextBlock Text="Логи:" />
+            <TextBox Text="{Binding Logs}" Height="300" Width="375" HorizontalScrollBarVisibility="Disabled" />
         </StackPanel>
     </Grid>
 </Window>

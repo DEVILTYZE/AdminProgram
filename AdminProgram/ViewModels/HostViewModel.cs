@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -27,16 +28,23 @@ namespace AdminProgram.ViewModels
             RefreshThreads = new ThreadList { IsDead = true };
             InitializeDb();
 
+            // Есть ли доступ в сеть.
             if (!NetworkInterface.GetIsNetworkAvailable())
                 return;
 
+            // Имя нашего ПК.
             _currentHost = Dns.GetHostEntry(Dns.GetHostName());
 
+            // Находим остальные ПК в локальной сети и добавляем их в словарь.
             foreach (var ipAddress in
                      _currentHost.AddressList.Where(thisIp => thisIp.AddressFamily == AddressFamily.InterNetwork))
                 CreateMacAddressTable(ipAddress.ToString());
         }
 
+        /// <summary>
+        /// Сканирование локальной сети на новые ПК.
+        /// </summary>
+        /// <returns>True — если сеть просканирована без ошибок, иначе False.</returns>
         public bool Scan()
         {
             if (_currentHost is null)
@@ -57,6 +65,9 @@ namespace AdminProgram.ViewModels
             return true;
         }
 
+        /// <summary>
+        /// Обновление списка ПК в программе.
+        /// </summary>
         public void Refresh()
         {
             RefreshThreads.IsDead = false;
@@ -72,6 +83,9 @@ namespace AdminProgram.ViewModels
             threadOfThreadList.Start();
         }
 
+        /// <summary>
+        /// Обновление статуса выбранного ПК в программе.
+        /// </summary>
         public static void Refresh([NotNull] object obj)
         {
             var host = (Host)obj;
@@ -85,39 +99,52 @@ namespace AdminProgram.ViewModels
             host.Status = publicKey.HasValue ? HostStatus.On : NetHelper.Ping(host.IpAddress);
         }
 
-        public bool PowerOn()
+        public void PowerOn()
         {
             SelectedHost.Status = HostStatus.Loading;
+
+            var thread = new Thread(new ParameterizedThreadStart(PowerOn));
+            thread.Start(SelectedHost);
+        }
+        
+        /// <summary>
+        /// Удалённое включение ПК.
+        /// </summary>
+        /// <returns>True — если ПК влючился без ошибок, иначе False.</returns>
+        private static void PowerOn([CanBeNull] object obj)
+        {
+            var host = (Host)obj;
+            
+            if (host is null)
+                return;
+            
             var client = new UdpClient();
-            var magicPacket = NetHelper.GetMagicPacket(SelectedHost.MacAddress);
-            var remoteIp = SelectedHost.RouteIp;
+            var magicPacket = NetHelper.GetMagicPacket(host.MacAddress);
+            var remoteIp = host.RouteIp;
 
             try
             {
-                client.Send(magicPacket, magicPacket.Length, new IPEndPoint(IPAddress.Broadcast, NetHelper.Port));
+                // Отправка магического пакета.
+                client.Send(magicPacket, magicPacket.Length, new IPEndPoint(IPAddress.Broadcast, NetHelper.UdpPort));
+                
+                // Получение открытого ключа после включения ПК.
                 var publicKey = NetHelper.GetPublicKeyOrDefault(client, remoteIp, NetHelper.LoadTimeout);
 
                 if (!publicKey.HasValue)
-                    return false;
+                {
+                    host.Status = HostStatus.Off;
+                    return;
+                }
 
-                SelectedHost.GenerateKeys();
-                
-                var command = new MessageCommand(NetHelper.GetMacAddress(), SelectedHost.PublicKey) { IsSystem = true };
-                var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), publicKey.Value,
-                    typeof(MessageCommand).FullName);
-                var datagramBytes = datagram.ToBytes();
-                client.Send(datagramBytes, datagramBytes.Length, remoteIp);
-                
-                client.Client.ReceiveTimeout = NetHelper.Timeout;
-                var data = client.Receive(ref remoteIp);
-                datagram = Datagram.FromBytes(data);
-                var result = CommandResult.FromBytes(datagram.GetData(SelectedHost.PrivateKey));
+                host.GenerateKeys();
+                var hostPrivateKey = host.PrivateKey;
 
-                return result.Status == CommandResultStatus.Successed;
+                while (!SendOurMacAddress(client, remoteIp, publicKey.Value, hostPrivateKey, host)) { }
+                // TODO: Сделать так, чтобы клиент смог принять наш мак адрес.
             }
             catch (Exception)
             {
-                return false;
+                // ignored
             }
             finally
             {
@@ -125,28 +152,72 @@ namespace AdminProgram.ViewModels
             }
         }
 
-        public bool Shutdown()
+        public void Shutdown()
         {
-            SelectedHost.Status = HostStatus.Off;
-            var shutdownProcess = new Process
-            {
-                StartInfo =
-                {
-                    FileName = "shutdown.exe",
-                    Arguments = $@"-s -f -m \\{SelectedHost.IpAddress} -t 1",
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    CreateNoWindow = true
-                }
-            };
+            SelectedHost.Status = HostStatus.Loading;
+            
+            var thread = new Thread(new ParameterizedThreadStart(Shutdown));
+            thread.Start(SelectedHost);
+        }
 
-            try
+        private static void Shutdown([CanBeNull] object obj)
+        {
+            var host = (Host)obj;
+
+            if (host is null)
+                return;
+            
+            var client = new UdpClient();
+            var remoteIp = new IPEndPoint(IPAddress.Parse(host.IpAddress), NetHelper.UdpPort);
+            var publicKey = NetHelper.GetPublicKeyOrDefault(client, remoteIp, NetHelper.Timeout);
+
+            if (!publicKey.HasValue)
             {
-                return shutdownProcess.Start();
+                host.Status = HostStatus.On;
+                return;
             }
-            catch (Exception)
+            
+            host.GenerateKeys();
+            var hostPrivateKey = host.PrivateKey;
+            var hostPublicKey = host.PublicKey;
+
+            var command = new ShutdownCommand(null, hostPublicKey);
+            var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), typeof(ShutdownCommand), 
+                publicKey.Value);
+            var bytes = datagram.ToBytes();
+            client.Send(bytes, bytes.Length, remoteIp);
+
+            bytes = client.Receive(ref remoteIp);
+            datagram = Datagram.FromBytes(bytes);
+            var result = CommandResult.FromBytes(datagram.GetData(hostPrivateKey));
+
+            if (result.Status != CommandResultStatus.Successed)
             {
-                return false;
+                host.Status = HostStatus.On;
+                return;
             }
+            
+            host.Status = HostStatus.Off;
+
+            // var shutdownProcess = new Process
+            // {
+            //     StartInfo =
+            //     {
+            //         FileName = "shutdown.exe",
+            //         Arguments = $@"-s -f -m \\{SelectedHost.IpAddress} -t 1",
+            //         WindowStyle = ProcessWindowStyle.Hidden,
+            //         CreateNoWindow = true
+            //     }
+            // };
+            //
+            // try
+            // {
+            //     return shutdownProcess.Start();
+            // }
+            // catch (Exception)
+            // {
+            //     return false;
+            // }
         }
 
         public void WaitAllThreads()
@@ -233,6 +304,25 @@ namespace AdminProgram.ViewModels
 
             foreach (Match match in Regex.Matches(cmdOutput, pattern))
                 _addresses.Add(match.Groups[1].Value, match.Groups[3].Value.Replace('-', ':'));
+        }
+
+        private static bool SendOurMacAddress(UdpClient client, IPEndPoint remoteIp, RSAParameters publicKey,
+            RSAParameters privateKey, Host host)
+        {
+            // Отправка мак-адреса нашего ПК.
+            var dataBytes = Encoding.Unicode.GetBytes(NetHelper.GetMacAddress());
+            var command = new MessageCommand(dataBytes, host.PublicKey) { IsSystem = true };
+            var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), typeof(MessageCommand), publicKey);
+            var datagramBytes = datagram.ToBytes();
+            client.Send(datagramBytes, datagramBytes.Length, remoteIp);
+                
+            // Проверка получения с помощью получения результата выполнения команды.
+            client.Client.ReceiveTimeout = NetHelper.Timeout;
+            var data = client.Receive(ref remoteIp);
+            datagram = Datagram.FromBytes(data);
+            var result = CommandResult.FromBytes(datagram.GetData(privateKey));
+            
+            return result.Status == CommandResultStatus.Successed;
         }
 
         private void InitializeDb()

@@ -3,8 +3,9 @@ using System.Security.Cryptography;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SecurityChannel;
 
-namespace SecurityChannel
+namespace CommandLib
 {
     [Serializable]
     public class Datagram
@@ -19,36 +20,33 @@ namespace SecurityChannel
         public byte[] Data { get; }
         public byte[] AesKey { get; }
         public string TypeName { get; }
-        public bool IsEncrypted { get; }
 
         [JsonConstructor]
-        public Datagram(byte[] data, byte[] aesKey, string typeName, bool isEncrypted)
+        public Datagram(byte[] data, byte[] aesKey, string typeName)
         {
             Data = data;
             AesKey = aesKey;
             TypeName = typeName;
-            IsEncrypted = isEncrypted;
         }
 
-        public Datagram(byte[] data, byte[] aesKey, RSAParameters rsaPublicKey, string typeName, bool isEncrypted = true)
+        public Datagram(byte[] data, byte[] aesKey, Type type, RSAParameters? rsaPublicKey = null)
         {
-            if (isEncrypted)
+            if (rsaPublicKey.HasValue)
             {
                 Data = AesEngine.Encrypt(data, aesKey);
-                AesKey = RsaEngine.Encrypt(aesKey, rsaPublicKey);
+                AesKey = RsaEngine.Encrypt(aesKey, rsaPublicKey.Value);
             }
             else Data = data;
             
-            TypeName = typeName;
-            IsEncrypted = isEncrypted;
+            TypeName = type.FullName;
         }
 
-        public byte[] GetData(RSAParameters rsaPrivateKey)
+        public byte[] GetData(RSAParameters? rsaPrivateKey = null)
         {
-            if (!IsEncrypted)
+            if (!rsaPrivateKey.HasValue)
                 return Data;
             
-            var aesKey = RsaEngine.Decrypt(AesKey, rsaPrivateKey);
+            var aesKey = RsaEngine.Decrypt(AesKey, rsaPrivateKey.Value);
             var data = AesEngine.Decrypt(Data, aesKey);
 
             return data;

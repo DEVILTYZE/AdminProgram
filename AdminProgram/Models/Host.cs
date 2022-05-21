@@ -18,7 +18,7 @@ namespace AdminProgram.Models
         
         public RSAParameters PrivateKey { get; private set; }
         public RSAParameters PublicKey { get; private set; }
-        public IPEndPoint RouteIp => new(IPAddress.Parse(IpAddress), NetHelper.MessageCommandPort);
+        public IPEndPoint RouteIp => new(IPAddress.Parse(IpAddress), NetHelper.UdpPort);
         
         public string Name
         {

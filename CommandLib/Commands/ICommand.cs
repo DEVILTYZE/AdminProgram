@@ -4,8 +4,8 @@ namespace CommandLib.Commands
 {
     public interface ICommand
     {
-        RSAParameters RsaPublicKey { get; }
-        object Data { set; }
+        RSAParameters? RsaPublicKey { get; }
+        byte[] Data { get; }
         CommandResult Execute();
         void Abort();
         byte[] ToBytes();

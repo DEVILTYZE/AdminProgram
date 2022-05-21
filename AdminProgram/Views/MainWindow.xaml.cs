@@ -5,7 +5,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using AdminProgram.ViewModels;
 using CommandLib;
-using SecurityChannel;
 
 namespace AdminProgram.Views
 {
@@ -45,19 +44,15 @@ namespace AdminProgram.Views
             switch (_model.SelectedHost.Status)
             {
                 case HostStatus.On:
-                    if (!_model.Shutdown())
-                        MessageBox.Show("On", "Status");
+                    _model.Shutdown();
                     break;
                 case HostStatus.Off:
-                    if (!_model.PowerOn())
-                        MessageBox.Show("Socket exception", "Error");
+                    _model.PowerOn();
                     break;
                 case HostStatus.Loading:
-                    MessageBox.Show("Loading", "Status");
-                    break;
                 case HostStatus.Unknown:
                 default:
-                    MessageBox.Show("Unknown", "Status");
+                    MessageBox.Show("Ошибка switch.");
                     break;
             }
         }
@@ -73,10 +68,8 @@ namespace AdminProgram.Views
         private void HostList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
             => RightPanel.Visibility = Visibility.Visible;
         
-
         private void RefreshAllButton_OnClick(object sender, RoutedEventArgs e) => _model.Refresh();
         
-
         private void RefreshButton_OnClick(object sender, RoutedEventArgs e)
         {
             _thread = new Thread(HostViewModel.Refresh);

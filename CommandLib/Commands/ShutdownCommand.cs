@@ -6,7 +6,7 @@ namespace CommandLib.Commands
     [Serializable]
     public class ShutdownCommand : AbstractCommand
     {
-        public ShutdownCommand(object data, RSAParameters publicKey) 
+        public ShutdownCommand(byte[] data, RSAParameters? publicKey = null) 
             : base(ConstHelper.ShutdownCommandId, ConstHelper.ShutdownCommandString, data, publicKey) { }
 
         public override CommandResult Execute()

@@ -1,6 +1,8 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using CommandLib;
+using CommandLib.Commands;
 using NUnit.Framework;
 using SecurityChannel;
 
@@ -19,8 +21,7 @@ namespace Tests.SecurityChannelTests
         {
             _aesKey = AesEngine.GetKey();
             _rsaKeys = RsaEngine.GetKeys();
-            _datagram = new Datagram(Encoding.Unicode.GetBytes(Data), _aesKey, _rsaKeys[1], 
-                Data.GetType().FullName);
+            _datagram = new Datagram(Encoding.Unicode.GetBytes(Data), _aesKey, Data.GetType(), _rsaKeys[1]);
             _jsonDatagram = JsonSerializer.Serialize(_datagram);
         }
 
@@ -35,6 +36,19 @@ namespace Tests.SecurityChannelTests
             var newJsonDatagram = JsonSerializer.Serialize(Datagram.FromBytes(bytes));
             
             Assert.AreEqual(_jsonDatagram, newJsonDatagram);
+        }
+        
+        [Test]
+        public void ByteArrayDatagramNull()
+        {
+            var command = new MessageCommand(Encoding.Unicode.GetBytes(Data));
+            var datagram = new Datagram(command.ToBytes(), null, typeof(MessageCommand));
+            var bytes = datagram.ToBytes();
+            datagram = Datagram.FromBytes(bytes);
+            var newCommand = AbstractCommand.FromBytes(datagram.GetData(), datagram.Type);
+            var result = newCommand.Execute();
+
+            Assert.AreEqual(Data, Encoding.Unicode.GetString(result.Data));
         }
     }
 }

@@ -17,21 +17,19 @@ namespace CommandLib.Commands
     [Serializable]
     public class CommandResult : ISendable
     {
-        private static JsonSerializerOptions _options = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
-        
         public CommandResultStatus Status { get; }
-        public object Data { get; }
+        public byte[] Data { get; }
         public RsaKey PublicKey { get; set; }
 
-        public CommandResult(CommandResultStatus status, [CanBeNull]object data)
+        public CommandResult(CommandResultStatus status, [CanBeNull]byte[] data)
         {
             Status = status;
             Data = data;
         }
 
-        public byte[] ToBytes() => JsonSerializer.SerializeToUtf8Bytes(this, _options);
+        public byte[] ToBytes() => JsonSerializer.SerializeToUtf8Bytes(this, ConstHelper.Options);
 
         public static CommandResult FromBytes(byte[] data) 
-            => JsonSerializer.Deserialize<CommandResult>(data, _options);
+            => JsonSerializer.Deserialize<CommandResult>(data, ConstHelper.Options);
     }
 }

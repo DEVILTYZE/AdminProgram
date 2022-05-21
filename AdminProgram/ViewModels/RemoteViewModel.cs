@@ -20,13 +20,11 @@ namespace AdminProgram.ViewModels
         private readonly Host _host;
         private bool _isAliveRemoteConnection;
         private Bitmap _imageScreen;
+        private int _height, _width;
         private readonly IPEndPoint _ourIpEndPoint;
-        private RSAParameters _privateKey, _publicKey;
+        private readonly RSAParameters _privateKey, _publicKey;
         private ScreenMatrix _screen;
         private Thread _remoteConnectionThread;
-        private readonly int _height, _width;
-
-        public Size WindowSize => new(_width, _height);
 
         public Host Host
         {
@@ -58,6 +56,26 @@ namespace AdminProgram.ViewModels
             }
         }
 
+        public int Height
+        {
+            get => _height;
+            set
+            {
+                _height = value;
+                OnPropertyChanged(nameof(Height));
+            }
+        }
+
+        public int Width
+        {
+            get => _width;
+            set
+            {
+                _width = value;
+                OnPropertyChanged(nameof(Width));
+            }
+        }
+
         public RemoteViewModel(Host host, IPEndPoint ourIpEndPoint) : this()
         {
             Host = host;
@@ -67,7 +85,7 @@ namespace AdminProgram.ViewModels
         public RemoteViewModel()
         {
             _height = _width = 500; // Просто 500.
-            GenerateNewKeys();
+            RsaEngine.GenerateKeys(out _privateKey, out _publicKey);
         }
 
         public void StartRemoteConnection()
@@ -101,10 +119,12 @@ namespace AdminProgram.ViewModels
                     publicKey = NetHelper.GetPublicKeyOrDefault(client, remoteIp, NetHelper.Timeout);
                 } 
                 while (!publicKey.HasValue);
-                
-                var command = new RemoteCommand(_ourIpEndPoint, _publicKey);
-                var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), publicKey.Value,
-                    typeof(RemoteCommand).FullName);
+
+                var remoteObject = new RemoteObject(_ourIpEndPoint.Address.ToString(), _ourIpEndPoint.Port, 
+                    new RsaKey(_publicKey));
+                var command = new RemoteCommand(remoteObject.ToBytes(), _publicKey);
+                var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), typeof(RemoteCommand), 
+                    publicKey.Value);
                 var datagramBytes = datagram.ToBytes();
                 client.Send(datagramBytes, datagramBytes.Length, remoteIp);
 
@@ -132,13 +152,6 @@ namespace AdminProgram.ViewModels
             {
                 client.Close();
             }
-        }
-
-        private void GenerateNewKeys()
-        {
-            var keys = RsaEngine.GetKeys();
-            _privateKey = keys[0];
-            _publicKey = keys[1];
         }
     }
 }

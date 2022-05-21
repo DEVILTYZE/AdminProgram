@@ -1,4 +1,7 @@
-﻿namespace CommandLib
+﻿using System.Text.Encodings.Web;
+using System.Text.Json;
+
+namespace CommandLib
 {
     public static class ConstHelper
     {
@@ -11,6 +14,12 @@
         public const string ShutdownCommandString = "SHUTDOWN";
         public const string GetFileCommandString = "GET_FILE";
         public const string StreamCommandString = "STREAM";
+        
+        public static readonly JsonSerializerOptions Options = new()
+        {
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, 
+            WriteIndented = true
+        };
         //public static byte[] Separator = { byte.MaxValue, byte.MaxValue, byte.MinValue, byte.MaxValue, byte.MinValue };
     }
 }

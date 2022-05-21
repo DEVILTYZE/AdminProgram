@@ -17,7 +17,7 @@ namespace AdminProgram.Converters
             {
                 HostStatus.Unknown => false,
                 HostStatus.Loading => false,
-                HostStatus.Off => false,
+                HostStatus.Off => true,
                 _ => true
             };
         }

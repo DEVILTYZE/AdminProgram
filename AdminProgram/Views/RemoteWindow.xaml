@@ -6,7 +6,11 @@
         xmlns:local="clr-namespace:AdminProgram.Views"
         xmlns:viewModels="clr-namespace:AdminProgram.ViewModels"
         mc:Ignorable="d"
-        Title="RemoteWindow" Height="450" Width="800"
+        Title="RemoteWindow" 
+        Height="{Binding Height}" 
+        Width="{Binding Width}"
+        MinHeight="500"
+        MinWidth="500"
         Closed="RemoteWindow_OnClosed"
         Loaded="RemoteWindow_OnLoaded">
     <Window.DataContext>
@@ -14,9 +18,7 @@
     </Window.DataContext>
     <Grid>
         <InkCanvas>
-            <Image x:Name="ScreenImage" 
-                   Source="{Binding ImageScreen}" 
-                   SourceUpdated="ScreenImage_OnSourceUpdated" />
+            <Image x:Name="ScreenImage" Source="{Binding ImageScreen}" />
         </InkCanvas>
     </Grid>
 </Window>
