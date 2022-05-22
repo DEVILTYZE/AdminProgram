@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using CommandLib.Commands.Helpers;
 using SecurityChannel;
 
 namespace CommandLib.Commands

@@ -1,6 +1,6 @@
 ﻿using SecurityChannel;
 
-namespace CommandLib.Commands
+namespace CommandLib.Commands.Helpers
 {
     public interface ISendable
     {

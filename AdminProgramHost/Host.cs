@@ -10,6 +10,7 @@ using System.Threading;
 using System.Windows;
 using CommandLib;
 using CommandLib.Commands;
+using CommandLib.Commands.Helpers;
 using Microsoft.Win32;
 using SecurityChannel;
 
@@ -147,7 +148,7 @@ namespace AdminProgramHost
                 Logs += "Простой exception.\r\n";
                 restart = true;
                 var result = new CommandResult(CommandResultStatus.Failed, Array.Empty<byte>());
-                var datagram = new Datagram(result.ToBytes(), null, typeof(CommandResult).FullName);
+                var datagram = new Datagram(result.ToBytes(), null, typeof(CommandResult));
                 var datagramBytes = datagram.ToBytes();
 
                 _client.Send(datagramBytes, datagramBytes.Length, _remoteIp);

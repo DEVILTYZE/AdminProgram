@@ -16,9 +16,7 @@ namespace AdminProgram.Models
         private readonly string _macAddress;
         private HostStatus _status;
         
-        public RSAParameters PrivateKey { get; private set; }
-        public RSAParameters PublicKey { get; private set; }
-        public IPEndPoint RouteIp => new(IPAddress.Parse(IpAddress), NetHelper.UdpPort);
+        public IPEndPoint EndPoint => new(IPAddress.Parse(IpAddress), NetHelper.UdpPort);
         
         public string Name
         {
@@ -81,8 +79,8 @@ namespace AdminProgram.Models
             }
         }
 
-        private Host() => GenerateKeys();
-        
+        private Host() { }
+
         public Host(string name, string ipAddress, string macAddress) : this()
         {
             Name = name;
@@ -96,13 +94,6 @@ namespace AdminProgram.Models
             IpAddress = hostDb.IpAddress;
             MacAddress = hostDb.MacAddress;
             Status = HostStatus.Unknown;
-        }
-
-        public void GenerateKeys()
-        {
-            RsaEngine.GenerateKeys(out var privateKey, out var publicKey);
-            PrivateKey = privateKey;
-            PublicKey = publicKey;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

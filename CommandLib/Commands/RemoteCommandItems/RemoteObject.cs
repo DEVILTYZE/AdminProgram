@@ -2,12 +2,13 @@
 using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
+using CommandLib.Commands.Helpers;
 using SecurityChannel;
 
 namespace CommandLib.Commands.RemoteCommandItems
 {
     [Serializable]
-    public class RemoteObject
+    public class RemoteObject : ICommandObject
     {
         public string IpAddress { get; set; }
         public int Port { get; set; }
@@ -22,12 +23,12 @@ namespace CommandLib.Commands.RemoteCommandItems
             Key = key;
         }
 
-        public (IPEndPoint, RSAParameters) GetData() =>
+        public virtual object GetData() =>
             (new IPEndPoint(IPAddress.Parse(IpAddress), Port), Key.GetKey());
 
         public byte[] ToBytes() => JsonSerializer.SerializeToUtf8Bytes(this, ConstHelper.Options);
 
-        public static RemoteObject FromBytes(byte[] data) =>
-            JsonSerializer.Deserialize<RemoteObject>(data, ConstHelper.Options);
+        public static ICommandObject FromBytes(byte[] data, Type type) =>
+            (ICommandObject)JsonSerializer.Deserialize(data, type, ConstHelper.Options);
     }
 }

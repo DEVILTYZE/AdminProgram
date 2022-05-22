@@ -14,6 +14,10 @@ namespace CommandLib
         public const string ShutdownCommandString = "SHUTDOWN";
         public const string GetFileCommandString = "GET_FILE";
         public const string StreamCommandString = "STREAM";
+
+        public const string DataError = "Невозможно получить IPEndPoint или RSAParameters.";
+        public const string FileError = "Файла не существует.";
+        public const string FileLengthError = "Вес файла больше допустимого (150 МБ).";
         
         public static readonly JsonSerializerOptions Options = new()
         {

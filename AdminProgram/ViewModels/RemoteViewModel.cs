@@ -10,6 +10,8 @@ using System.Threading;
 using AdminProgram.Annotations;
 using AdminProgram.Models;
 using CommandLib;
+using CommandLib.Commands;
+using CommandLib.Commands.Helpers;
 using CommandLib.Commands.RemoteCommandItems;
 using SecurityChannel;
 
@@ -107,8 +109,8 @@ namespace AdminProgram.ViewModels
 
         private void RemoteConnection()
         {
-            var remoteIp = Host.RouteIp;
-            var client = new UdpClient();
+            var remoteIp = Host.EndPoint;
+            var client = new UdpClient(remoteIp.Port);
             
             try
             {
@@ -117,6 +119,9 @@ namespace AdminProgram.ViewModels
                 do
                 {
                     publicKey = NetHelper.GetPublicKeyOrDefault(client, remoteIp, NetHelper.Timeout);
+                    
+                    if (!IsAliveRemoteConnection)
+                        return;
                 } 
                 while (!publicKey.HasValue);
 

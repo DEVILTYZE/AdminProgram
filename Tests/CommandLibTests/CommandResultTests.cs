@@ -2,6 +2,7 @@
 using System.Text.Json;
 using CommandLib;
 using CommandLib.Commands;
+using CommandLib.Commands.Helpers;
 using NUnit.Framework;
 using SecurityChannel;
 

@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Security.Cryptography;
+using CommandLib.Commands.Helpers;
 
 namespace CommandLib.Commands
 {
@@ -11,9 +13,30 @@ namespace CommandLib.Commands
 
         public override CommandResult Execute()
         {
-            throw new System.NotImplementedException();
+            var shutdownProcess = new Process
+            {
+                StartInfo =
+                {
+                    FileName = "shutdown.exe",
+                    Arguments = @"-s -f -t 1",
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    CreateNoWindow = true
+                }
+            };
+
+            bool isOff;
             
-            // TODO: Сделать...
+            try
+            {
+                isOff = shutdownProcess.Start();
+            }
+            catch (Exception)
+            {
+                isOff = false;
+            }
+
+            return new CommandResult(isOff ? CommandResultStatus.Successed : CommandResultStatus.Failed,
+                Array.Empty<byte>());
         }
     }
 }

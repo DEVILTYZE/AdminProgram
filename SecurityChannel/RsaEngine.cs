@@ -16,7 +16,7 @@ namespace SecurityChannel
 
         public static void GenerateKeys(out RSAParameters privateKey, out RSAParameters publicKey)
         {
-            var keys = RsaEngine.GetKeys();
+            var keys = GetKeys();
             privateKey = keys[0];
             publicKey = keys[1];
         }

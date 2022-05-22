@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Security.Cryptography;
 using System.Text.Json.Serialization;
+using CommandLib.Commands.Helpers;
 
 namespace CommandLib.Commands
 {

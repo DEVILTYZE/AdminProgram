@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using CommandLib.Annotations;
 using SecurityChannel;
 
-namespace CommandLib.Commands
+namespace CommandLib.Commands.Helpers
 {
     [Serializable]
     public enum CommandResultStatus

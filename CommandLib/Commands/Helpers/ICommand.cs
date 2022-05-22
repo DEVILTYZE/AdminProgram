@@ -1,6 +1,6 @@
 ﻿using System.Security.Cryptography;
 
-namespace CommandLib.Commands
+namespace CommandLib.Commands.Helpers
 {
     public interface ICommand
     {

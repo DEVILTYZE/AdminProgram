@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using CommandLib.Annotations;
+using CommandLib.Commands.Helpers;
 using SecurityChannel;
 
 namespace CommandLib.Commands.RemoteCommandItems
@@ -15,8 +16,6 @@ namespace CommandLib.Commands.RemoteCommandItems
     [Serializable]
     public class RemoteCommand : AbstractCommand
     {
-        private const string DataError = "Невозможно получить IPEndPoint или RSAParameters";
-        
         private bool _isActive;
         private RSAParameters _publicKey;
         private ScreenMatrix _screen;
@@ -31,11 +30,12 @@ namespace CommandLib.Commands.RemoteCommandItems
 
             try
             {
-                (remoteIp, _publicKey) = RemoteObject.FromBytes(Data).GetData();
+                (remoteIp, _publicKey) = ((IPEndPoint, RSAParameters))RemoteObject.FromBytes(Data, 
+                    typeof(RemoteObject)).GetData();
             }
             catch (Exception)
             {
-                return new CommandResult(CommandResultStatus.Failed, Encoding.Unicode.GetBytes(DataError));
+                return new CommandResult(CommandResultStatus.Failed, Encoding.Unicode.GetBytes(ConstHelper.DataError));
             }
 
             var thread = new Thread(StartRemoteConnection);

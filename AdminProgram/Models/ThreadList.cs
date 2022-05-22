@@ -27,7 +27,11 @@ namespace AdminProgram.Models
             _list = new List<Thread>();
         }
         
-        public void Add(Thread thread) => _list.Add(thread);
+        public void Add(Thread thread)
+        {
+            IsDead = false;
+            _list.Add(thread);
+        }
 
         public void WaitThreads()
         {
