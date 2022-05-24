@@ -32,14 +32,18 @@
         </Grid.ColumnDefinitions>
         <Button x:Name="ScanButton"
                 Style="{StaticResource {x:Type Button}}"
-                Content="{Binding ScanThreads.IsDead, Converter={StaticResource ScanButtonText}}"
-                IsEnabled="{Binding ScanThreads.IsDead}"
+                Content="{Binding ScanThreads.IsAlive, 
+                Converter={StaticResource ScanButtonText}}"
+                IsEnabled="{Binding ScanThreads.IsAlive, 
+                Converter={StaticResource OppositeBool}}"
                 Click="ScanButton_OnClick"/>
         <Button Grid.Row="0" Grid.Column="1" 
                 x:Name="RefreshAllButton"
                 Style="{StaticResource {x:Type Button}}"
-                Content="{Binding RefreshThreads.IsDead, Converter={StaticResource RefreshButtonText}}"
-                IsEnabled="{Binding RefreshThreads.IsDead}"
+                Content="{Binding RefreshThreads.IsAlive, 
+                Converter={StaticResource RefreshButtonText}}"
+                IsEnabled="{Binding RefreshThreads.IsAlive, 
+                Converter={StaticResource OppositeBool}}"
                 Click="RefreshAllButton_OnClick"/>
         <TextBox Grid.Row="0" Grid.Column="2" 
                  x:Name="SearchBox" 
@@ -81,18 +85,34 @@
             <StackPanel Orientation="Horizontal">
                 <TextBlock Style="{StaticResource HostPanel}" Text="Статус:" />
                 <Ellipse Style="{StaticResource {x:Type Ellipse}}" 
-                         Fill="{Binding SelectedHost.Status, Converter={StaticResource EllipseColor}}" />
+                         Fill="{Binding SelectedHost.Status, 
+                         Converter={StaticResource EllipseColor}}" />
                 <TextBlock Style="{StaticResource HostPanel}" 
-                           Text="{Binding SelectedHost.Status, Converter={StaticResource StatusText}}" />
+                           Text="{Binding SelectedHost.Status, 
+                           Converter={StaticResource StatusText}}" />
             </StackPanel>
             <Button Style="{StaticResource {x:Type Button}}"
-                    Content="{Binding SelectedHost.Status, Converter={StaticResource PowerOnButtonText}}"
-                    IsEnabled="{Binding SelectedHost.Status, Converter={StaticResource StatusBool}}"
+                    Content="{Binding SelectedHost.Status, 
+                    Converter={StaticResource PowerOnButtonText}}"
+                    IsEnabled="{Binding SelectedHost.Status, 
+                    Converter={StaticResource StatusBoolPower}}"
                     Click="PowerButton_OnClick" />
-            <Button Style="{StaticResource {x:Type Button}}"
+            <StackPanel IsEnabled="{Binding SelectedHost.Status, 
+                        Converter={StaticResource StatusBool}}">
+                <Button Style="{StaticResource {x:Type Button}}"
                     Content="Обновить статус"
-                    IsEnabled="{Binding SelectedHost.Status, Converter={StaticResource StatusBool}}"
                     Click="RefreshButton_OnClick"/>
+                <!-- IsEnabled="{Binding SelectedHost.Status,  -->
+                <!-- Converter={StaticResource StatusBool}}" -->
+                <Button x:Name="RemoteButton"
+                    Style="{StaticResource {x:Type Button}}" 
+                    Content="Удалённое управление"
+                    Click="RemoteButton_OnClick"/>
+                <TextBox Text="{Binding TransferMessage}"/>
+                <Button IsEnabled="{Binding SelectedHost.IsTransfers, 
+                    Converter={StaticResource OppositeBool}}"
+                    Click="TransferButton_OnClick"/>
+            </StackPanel>
         </StackPanel>
     </Grid>
 </Window>

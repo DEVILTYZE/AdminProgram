@@ -28,7 +28,14 @@ namespace AdminProgramHost
 
         private void MainWindow_OnClosed([CanBeNull]object sender, EventArgs e) => _model.WaitThread();
 
-        private void MainWindow_OnLoaded(object sender, RoutedEventArgs e) => _model.StartClientSession();
+        private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
+        {
+            if (_model.StartClientSession()) 
+                return;
+            
+            MessageBox.Show("Не существует файла с мак-адресом.");
+            Close();
+        }
 
         private void ButtonBase_OnClick(object sender, RoutedEventArgs e) => _model.SetAutorunValue(false);
     }

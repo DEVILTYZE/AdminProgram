@@ -14,11 +14,11 @@ using SecurityChannel;
 namespace CommandLib.Commands.TransferCommandItems
 {
     [Serializable]
-    public class TransferFileCommand : AbstractCommand
+    public class TransferCommand : AbstractCommand
     {
         private RSAParameters _publicKey;
         
-        public TransferFileCommand(byte[] data, RSAParameters? publicKey = null) 
+        public TransferCommand(byte[] data, RSAParameters? publicKey = null) 
             : base(ConstHelper.GetFileCommandId, ConstHelper.GetFileCommandString, data, publicKey) { }
 
         public override CommandResult Execute()
@@ -83,8 +83,8 @@ namespace CommandLib.Commands.TransferCommandItems
 
                 var datagram = new Datagram(fileData, AesEngine.GetKey(), typeof(byte[]), _publicKey);
                 var fileNameByteArray = FileNameToByteArray(filePath);
-                var bytes = fileNameByteArray.Concat(datagram.ToBytes()).ToArray();
-                bytes = BitConverter.GetBytes(bytes.Length).Concat(bytes).ToArray();
+                var bytes = datagram.ToBytes();
+                bytes = fileNameByteArray.Concat(BitConverter.GetBytes(bytes.Length)).Concat(bytes).ToArray();
 
                 using (var stream = client.GetStream())
                 {

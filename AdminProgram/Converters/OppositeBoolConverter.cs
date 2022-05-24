@@ -1,26 +1,20 @@
 ﻿using System;
 using System.Globalization;
 using System.Windows.Data;
-using CommandLib;
 
 namespace AdminProgram.Converters
 {
-    public class StatusBoolConverter : IValueConverter
+    public class OppositeBoolConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is null)
                 return false;
 
-            return (HostStatus)value == HostStatus.On;
+            return !(bool)value;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is null)
-                return HostStatus.Unknown;
-
-            return (bool)value ? HostStatus.On : HostStatus.Unknown;
-        }
+            => Convert(value, targetType, parameter, culture);
     }
 }

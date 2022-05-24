@@ -27,31 +27,20 @@ namespace AdminProgram.ViewModels
     {
         public HostViewModel()
         {
-            TransferThreads = new ThreadList { IsDead = true };
-            ScanThreads = new ThreadList { IsDead = true };
-            RefreshThreads = new ThreadList { IsDead = true };
+            TransferThreads = new ThreadList();
+            ScanThreads = new ThreadList();
+            RefreshThreads = new ThreadList();
             InitializeDb();
-            var hostDb = _db.Hosts.FirstOrDefault();
-            var host = hostDb is not null ? new Host(hostDb) : null;
-            
-            if (host is null || NetHelper.PortIsEnabled(host.EndPoint))
-                NetHelper.SetPort(
-                    _requestPath,
-                    NetHelper.UdpPort,
-                    NetHelper.UdpPort,
-                    "UDP",
-                    "192.168.0.105", 
-                    1,
-                    "AdminProgram",
-                    0
-                );
-            
+
             // Есть ли доступ в сеть.
             if (!NetworkInterface.GetIsNetworkAvailable())
                 return;
 
-            // Имя нашего ПК.
+            // Текущий хост.
             _currentHost = Dns.GetHostEntry(Dns.GetHostName());
+
+            EnablePortIfItDisabled(NetHelper.UdpPort);
+            EnablePortIfItDisabled(NetHelper.FtpPort, "TCP");
 
             // Находим остальные ПК в локальной сети и добавляем их в словарь.
             foreach (var ipAddress in
@@ -102,12 +91,11 @@ namespace AdminProgram.ViewModels
         /// </summary>
         public static void Refresh([NotNull] object obj)
         {
+            if (obj is null)
+                throw new ArgumentException("Host is null");
+            
             var host = (Host)obj;
             host.Status = HostStatus.Loading;
-            
-            if (host is null)
-                throw new ArgumentException("Host is null");
-
             var client = new UdpClient();
             var publicKey = NetHelper.GetPublicKeyOrDefault(client, host.EndPoint, NetHelper.Timeout);
             host.Status = publicKey.HasValue ? HostStatus.On : NetHelper.Ping(host.IpAddress);
@@ -124,7 +112,7 @@ namespace AdminProgram.ViewModels
         /// <summary>
         /// Удалённое включение ПК.
         /// </summary>
-        private static void PowerOn([CanBeNull] object obj)
+        private void PowerOn([CanBeNull] object obj)
         {
             var host = (Host)obj;
             
@@ -138,7 +126,9 @@ namespace AdminProgram.ViewModels
             try
             {
                 // Отправка магического пакета.
-                client.Send(magicPacket, magicPacket.Length, new IPEndPoint(IPAddress.Broadcast, NetHelper.UdpPort));
+                var currentIp = _currentIpAddress.ToString();
+                var broadcastIp = currentIp[..currentIp.LastIndexOf('.')] + ".255";
+                client.Send(magicPacket, magicPacket.Length, new IPEndPoint(IPAddress.Parse(broadcastIp), NetHelper.UdpPort));
 
                 // Получение открытого ключа после включения ПК.
                 var publicKey = NetHelper.GetPublicKeyOrDefault(client, endPoint, NetHelper.LoadTimeout);
@@ -153,6 +143,7 @@ namespace AdminProgram.ViewModels
 
                 while (!SendOurMacAddress(client, endPoint, keys[0], keys[1], publicKey.Value))
                 {
+                    Thread.Sleep(500);
                 }
                 // TODO: Сделать так, чтобы клиент смог принять наш мак адрес.
             }
@@ -198,6 +189,7 @@ namespace AdminProgram.ViewModels
             var bytes = datagram.ToBytes();
             client.Send(bytes, bytes.Length, endPoint);
 
+            client.Client.ReceiveTimeout = NetHelper.Timeout;
             bytes = client.Receive(ref endPoint);
             datagram = Datagram.FromBytes(bytes);
             var result = CommandResult.FromBytes(datagram.GetData(keys[0]));
@@ -211,11 +203,16 @@ namespace AdminProgram.ViewModels
             host.Status = HostStatus.Off;
         }
 
-        public void TransferFiles()
+        public bool TransferFiles()
         {
-            var thread = new Thread(new ParameterizedThreadStart(TransferFiles));
-            thread.Start((SelectedHost, string.Empty)); // TODO: Добавить PATH
+            if (string.IsNullOrEmpty(TransferMessage))
+                return false;
+            
+            var thread = new Thread(TransferFiles);
+            thread.Start((SelectedHost, TransferMessage));
             TransferThreads.Add(thread);
+
+            return true;
         }
 
         private void TransferFiles([CanBeNull] object obj)
@@ -232,15 +229,20 @@ namespace AdminProgram.ViewModels
                 return;
 
             var keys = RsaEngine.GetKeys();
-            var command = new TransferFileCommand(new TransferObject(host.IpAddress, NetHelper.UdpPort, 
+            var command = new TransferCommand(new TransferObject(host.IpAddress, NetHelper.UdpPort, 
                     new RsaKey(keys[1]), path).ToBytes());
-            var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), typeof(TransferFileCommand),
+            var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), typeof(TransferCommand),
                 publicKey.Value);
             var bytes = datagram.ToBytes();
             client.Send(bytes, bytes.Length, endPoint);
 
             var thread = new Thread(Transfer);
-            thread.Start((endPoint, host.Name));
+            thread.Start((new IPEndPoint(endPoint.Address, NetHelper.FtpPort), host));
+
+            client.Client.ReceiveTimeout = NetHelper.Timeout;
+            bytes = client.Receive(ref endPoint);
+            datagram = Datagram.FromBytes(bytes);
+            var result = CommandResult.FromBytes(datagram.GetData(keys[0]));
         }
 
         private void Transfer([CanBeNull] object obj)
@@ -248,7 +250,7 @@ namespace AdminProgram.ViewModels
             if (obj is null)
                 return;
             
-            var (endPoint, hostName) = ((IPEndPoint, string))obj;
+            var (endPoint, host) = ((IPEndPoint, Host))obj;
             TcpListener server = null;
             var responseList = new List<List<byte>>();
             var namesList = new List<string>();
@@ -259,9 +261,10 @@ namespace AdminProgram.ViewModels
                 server.Start();
                 
                 var client = server.AcceptTcpClient();
+                client.Client.ReceiveTimeout = NetHelper.Timeout;
                 var countOfFiles = client.GetStream().ReadByte();
                 
-                for (var i = 0; i < countOfFiles && !TransferThreads.IsDead; ++i)
+                for (var i = 0; i < countOfFiles && host.IsTransfers && TransferThreads.IsAlive; ++i)
                 {
                     responseList.Add(new List<byte>(NetHelper.MaxFileLength));
                     
@@ -304,10 +307,10 @@ namespace AdminProgram.ViewModels
                 server?.Stop();
             }
 
-            for (var i = 0; i < responseList.Count && !TransferThreads.IsDead; ++i)
+            for (var i = 0; i < responseList.Count && host.IsTransfers && TransferThreads.IsAlive; ++i)
             {
                 var count = 1;
-                var path = _filesDirectory + hostName + namesList[i];
+                var path = _filesDirectory + host.Name + namesList[i];
                 while (File.Exists(path))
                 {
                     if (count == 1)
@@ -322,11 +325,32 @@ namespace AdminProgram.ViewModels
             }
         }
 
+        public void CloseTransfer()
+        {
+            SelectedHost.IsTransfers = false;
+            var client = new UdpClient();
+            var endPoint = SelectedHost.EndPoint;
+            var publicKey = NetHelper.GetPublicKeyOrDefault(client, endPoint, NetHelper.Timeout);
+            var keys = RsaEngine.GetKeys();
+            var command = new TransferCommand(null, keys[1]) { Type = CommandType.Abort };
+            var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), typeof(TransferCommand), publicKey);
+            var bytes = datagram.ToBytes();
+            client.Send(bytes, bytes.Length, endPoint);
+
+            bytes = client.Receive(ref endPoint);
+            datagram = Datagram.FromBytes(bytes);
+            var result = CommandResult.FromBytes(datagram.GetData(keys[0]));
+            // TODO: Доделать...
+        }
+
         public void WaitAllThreads()
         {
             ScanThreads.WaitThreads();
             RefreshThreads.WaitThreads();
+            TransferThreads.WaitThreads();
         }
+
+        public IPEndPoint GetOurIpEndPoint() => new(_currentIpAddress, NetHelper.UdpPort);
 
         private void AddHost([NotNull] object obj)
         {
@@ -422,7 +446,7 @@ namespace AdminProgram.ViewModels
         {
             // Отправка мак-адреса нашего ПК.
             var dataBytes = Encoding.Unicode.GetBytes(NetHelper.GetMacAddress());
-            var command = new MessageCommand(dataBytes, publicKeyToOther) { IsSystem = true };
+            var command = new MessageCommand(dataBytes, publicKeyToOther) { Type = CommandType.System};
             var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), typeof(MessageCommand), publicKey);
             var datagramBytes = datagram.ToBytes();
             client.Send(datagramBytes, datagramBytes.Length, endPoint);
@@ -434,6 +458,29 @@ namespace AdminProgram.ViewModels
             var result = CommandResult.FromBytes(datagram.GetData(privateKey));
             
             return result.Status == CommandResultStatus.Successed;
+        }
+
+        private void EnablePortIfItDisabled(int port, string portType = "UDP", string ip = "")
+        {
+            var hostDb = _db.Hosts.FirstOrDefault();
+            var host = hostDb is not null ? new Host(hostDb) : null;
+            const int countOfRepeat = 5; 
+            ip = string.IsNullOrEmpty(ip) ? GetOurIpEndPoint().Address.ToString() : ip;
+
+            if (host is not null && NetHelper.PortIsEnabled(host.IpAddress, port)) 
+                return;
+            
+            for (var i = 0; i < countOfRepeat; ++i)
+                if (NetHelper.SetPort(
+                        port,
+                        port,
+                        portType,
+                        ip,
+                        1,
+                        "AdminProgram",
+                        0
+                        ))
+                    return;
         }
 
         private void InitializeDb()

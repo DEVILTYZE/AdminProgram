@@ -20,9 +20,13 @@ namespace AdminProgram.Views
 
         private Thread _thread;
         
+        public delegate void ChangeStatusDelegate(bool isEnabled);
+        public event ChangeStatusDelegate ChangeRemoteStatus;
+        
         public MainWindow()
         {
             InitializeComponent();
+            ChangeRemoteStatus += ChangeRemoteButtonStatus;
             
             _model = (HostViewModel)DataContext;
             Scan(_model);
@@ -59,7 +63,7 @@ namespace AdminProgram.Views
 
         private static void Scan(HostViewModel hostViewModel)
         {
-            hostViewModel.ScanThreads.IsDead = false;
+            hostViewModel.ScanThreads.IsAlive = true;
             
             if (!hostViewModel.Scan())
                 MessageBox.Show("Scan error", "Error");
@@ -96,6 +100,34 @@ namespace AdminProgram.Views
                 _thread.Join();
             
             _model.WaitAllThreads();
+        }
+
+        private void RemoteButton_OnClick(object sender, RoutedEventArgs e)
+        {
+            ChangeRemoteStatus?.Invoke(false);
+            var remoteWindow = new RemoteWindow(_model.SelectedHost, _model.GetOurIpEndPoint(), ChangeRemoteStatus)
+            {
+                Owner = this
+            };
+            remoteWindow.ShowDialog();
+        }
+
+        private void ChangeRemoteButtonStatus(bool isEnabled) => RemoteButton.IsEnabled = isEnabled;
+
+        private void TransferButton_OnClick(object sender, RoutedEventArgs e)
+        {
+            switch (_model.SelectedHost.IsTransfers)
+            {
+                case false:
+                    if (!_model.TransferFiles())
+                        MessageBox.Show("Неверный путь до файла.");
+                    
+                    break;
+                case true:
+                    _model.CloseTransfer();
+                    break;
+            }
+
         }
     }
 }

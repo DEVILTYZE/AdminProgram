@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Net;
 using System.Net.Sockets;
@@ -6,28 +7,29 @@ using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading;
 using AdminProgramHost.Annotations;
+using CommandLib.Commands.Helpers;
 
 namespace AdminProgramHost
 {
     public partial class Host : INotifyPropertyChanged
     {
-        private const int Port = 8001;
-        private static readonly string MacDatPath = Environment.SpecialFolder.UserProfile + "\\mac.dat";
+        private static readonly string MacDatPath = Environment.CurrentDirectory + "\\mac.apd";
+        private static readonly string LogsPath = Environment.CurrentDirectory + "\\logs" + DateTime.Now.ToString(
+            "yyyyMMddHHmmss") + ".txt";
 
-        private static readonly string LogsPath =
-            Environment.CurrentDirectory + "\\logs" + DateTime.Now.ToString("yyyyMMddHHmmss") + ".txt";
-
-        private string _name, _ipAddress, _macAddress, _mainMacAddress, _logs;
+        private readonly string _name, _ipAddress, _macAddress;
+        private string _mainMacAddress, _logs;
         private Thread _threadReceiveData;
         private RSAParameters _privateKey, _publicKey;
         private UdpClient _client;
         private bool _forceClose;
-        private IPEndPoint _remoteIp;
+        private IPEndPoint _endPoint;
+        private readonly List<ICommand> _savedCommands;
 
         public string Name
         {
             get => _name;
-            set
+            init
             {
                 _name = value;
                 OnPropertyChanged(nameof(Name));
@@ -37,7 +39,7 @@ namespace AdminProgramHost
         public string IpAddress
         {
             get => _ipAddress;
-            set
+            init
             {
                 _ipAddress = value;
                 OnPropertyChanged(nameof(IpAddress));
@@ -47,7 +49,7 @@ namespace AdminProgramHost
         public string MacAddress
         {
             get => _macAddress;
-            set
+            init
             {
                 _macAddress = value;
                 OnPropertyChanged(nameof(MacAddress));

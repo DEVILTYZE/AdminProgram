@@ -23,6 +23,8 @@ namespace CommandLib
     
     public static class NetHelper
     {
+        private static readonly string RequestPath = Environment.CurrentDirectory + "\\request.txt";
+        
         public const int AutoPort = 0;
         public const int UdpPort = 30003;
         public const int FtpPort = 20;
@@ -99,20 +101,24 @@ namespace CommandLib
             return result.PublicKey.GetKey();
         }
 
-        public static bool PortIsEnabled(IPEndPoint endPoint)
+        public static bool PortIsEnabled(string ipAddress, int port)
         {
-            var key = GetPublicKeyOrDefault(new UdpClient(), endPoint, Timeout);
+            var ip = IPAddress.Parse(ipAddress);
+            var key = GetPublicKeyOrDefault(new UdpClient(), new IPEndPoint(ip, port), Timeout);
 
             return key is not null;
         }
 
-        public static bool SetPort(string requestFilePath, int port, int port2, string protocol, string ipAddress, 
+        public static bool SetPort(int port, int otherPort, string protocol, string ipAddress, 
             int enabled, string infoString, int leaseInfo)
         {
             const string serviceType = "<serviceType>urn:schemas-upnp-org:service:WANIPConnection:1</serviceType>";
             const string controlUrlTag = "<controlURL>";
 
-            var requestString = GetRequestString(requestFilePath, port, port2, protocol, ipAddress, enabled, infoString,
+            if (!File.Exists(RequestPath))
+                return false;
+
+            var requestString = GetRequestString(RequestPath, port, otherPort, protocol, ipAddress, enabled, infoString,
                 leaseInfo);
             var location = GetLocation();
             var request = (HttpWebRequest)WebRequest.Create(location);

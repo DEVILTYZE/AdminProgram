@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using AdminProgram.Annotations;
@@ -10,26 +11,26 @@ namespace AdminProgram.Models
     {
         private readonly List<Thread> _list;
 
-        private bool _isDead;
+        private bool _isAlive;
 
-        public bool IsDead
+        public int Count => _list.Count(thread => !thread.IsAlive);
+        
+        public bool IsAlive
         {
-            get => _isDead;
+            get => _isAlive;
             set
             {
-                _isDead = value;
-                OnPropertyChanged(nameof(IsDead));
+                _isAlive = value;
+                OnPropertyChanged(nameof(IsAlive));
             }
         }
 
-        public ThreadList()
-        {
-            _list = new List<Thread>();
-        }
-        
+        public ThreadList() => _list = new List<Thread>();
+
         public void Add(Thread thread)
         {
-            IsDead = false;
+            IsAlive = true;
+            RemoveUselessThreads();
             _list.Add(thread);
         }
 
@@ -39,8 +40,10 @@ namespace AdminProgram.Models
                 thread.Join();
 
             _list.Clear();
-            IsDead = true;
+            IsAlive = false;
         }
+
+        private void RemoveUselessThreads() => _list.RemoveAll(thread => !thread.IsAlive);
 
         public event PropertyChangedEventHandler PropertyChanged;
 

@@ -10,7 +10,6 @@ using System.Threading;
 using AdminProgram.Annotations;
 using AdminProgram.Models;
 using CommandLib;
-using CommandLib.Commands;
 using CommandLib.Commands.Helpers;
 using CommandLib.Commands.RemoteCommandItems;
 using SecurityChannel;
@@ -97,7 +96,22 @@ namespace AdminProgram.ViewModels
             _remoteConnectionThread.Start();
         }
 
-        public void CloseRemoteConnection() => IsAliveRemoteConnection = false;
+        public void CloseRemoteConnection()
+        {
+            IsAliveRemoteConnection = false;
+            var client = new UdpClient();
+            var endPoint = Host.EndPoint;
+            var publicKey = NetHelper.GetPublicKeyOrDefault(client, endPoint, NetHelper.Timeout);
+            var keys = RsaEngine.GetKeys();
+            var command = new RemoteCommand(null, keys[1]) { Type = CommandType.Abort };
+            var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), typeof(RemoteCommand), publicKey);
+            var bytes = datagram.ToBytes();
+            client.Send(bytes, bytes.Length, endPoint);
+
+            bytes = client.Receive(ref endPoint);
+            datagram = Datagram.FromBytes(bytes);
+            var result = CommandResult.FromBytes(datagram.GetData(keys[0]));
+        }
         
         public event PropertyChangedEventHandler PropertyChanged;
 

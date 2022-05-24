@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Net;
 using System.Runtime.CompilerServices;
 using AdminProgram.Annotations;
@@ -13,17 +14,19 @@ namespace AdminProgram.ViewModels
     {
         private readonly object _locker = new();
         private readonly IPHostEntry _currentHost;
-        private readonly string _requestPath = Environment.CurrentDirectory + "\\request.txt";
         private readonly string _filesDirectory = Environment.CurrentDirectory + "\\admin_dir_files\\";
-
+        private readonly string[] _localNetworks = { "192", "172", "10" };
+        
         private Dictionary<string, string> _addresses;
         private Host _selectedHost;
+        private string _transferMessage;
         private AdminContext _db;
+        private IPAddress _currentIpAddress => _currentHost.AddressList.First(ip => _localNetworks.Any(localNet
+            => ip.ToString().StartsWith(localNet)));
 
         public ObservableCollection<Host> Hosts { get; set; }
         public ThreadList ScanThreads { get; }
         public ThreadList RefreshThreads { get; }
-        
         public ThreadList TransferThreads { get; }
 
         public Host SelectedHost
@@ -33,6 +36,16 @@ namespace AdminProgram.ViewModels
             {
                 _selectedHost = value;
                 OnPropertyChanged(nameof(SelectedHost));
+            }
+        }
+
+        public string TransferMessage
+        {
+            get => _transferMessage;
+            set
+            {
+                _transferMessage = value;
+                OnPropertyChanged(nameof(TransferMessage));
             }
         }
         

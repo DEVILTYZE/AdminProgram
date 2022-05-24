@@ -8,8 +8,6 @@ namespace CommandLib.Commands
     [Serializable]
     public class MessageCommand : AbstractCommand
     {
-        public bool IsSystem { get; set; }
-
         [JsonConstructor]
         public MessageCommand() { }
 

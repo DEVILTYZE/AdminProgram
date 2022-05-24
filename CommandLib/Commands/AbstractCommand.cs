@@ -14,6 +14,7 @@ namespace CommandLib.Commands
         public string CommandName { get; set; }
         public RsaKey PublicKey { get; set; }
         public byte[] Data { get; set; }
+        public CommandType Type { get; set; }
 
         [JsonIgnore] 
         public RSAParameters? RsaPublicKey => PublicKey?.GetKey();
@@ -27,6 +28,7 @@ namespace CommandLib.Commands
             CommandName = commandName;
             Data = data;
             PublicKey = publicKey.HasValue ? new RsaKey(publicKey.Value) : null;
+            Type = CommandType.Execute;
         }
 
         public abstract CommandResult Execute();

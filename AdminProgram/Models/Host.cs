@@ -15,6 +15,7 @@ namespace AdminProgram.Models
         private string _name, _ipAddress;
         private readonly string _macAddress;
         private HostStatus _status;
+        private bool _isTransfers;
         
         public IPEndPoint EndPoint => new(IPAddress.Parse(IpAddress), NetHelper.UdpPort);
         
@@ -75,7 +76,17 @@ namespace AdminProgram.Models
             set
             {
                 _status = value;
-                OnPropertyChanged();
+                OnPropertyChanged(nameof(Status));
+            }
+        }
+
+        public bool IsTransfers
+        {
+            get => _isTransfers;
+            set
+            {
+                _isTransfers = value;
+                OnPropertyChanged(nameof(IsTransfers));
             }
         }
 

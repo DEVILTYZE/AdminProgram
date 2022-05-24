@@ -2,17 +2,24 @@
 using System.Globalization;
 using System.Windows.Data;
 using CommandLib;
+using SecurityChannel;
 
 namespace AdminProgram.Converters
 {
-    public class StatusBoolConverter : IValueConverter
+    public class StatusPowerBoolConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is null)
                 return false;
 
-            return (HostStatus)value == HostStatus.On;
+            return (HostStatus)value switch
+            {
+                HostStatus.Unknown => false,
+                HostStatus.Loading => false,
+                HostStatus.Off => true,
+                _ => true
+            };
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

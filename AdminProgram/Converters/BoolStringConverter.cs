@@ -19,7 +19,7 @@ namespace AdminProgram.Converters
             if (value is null)
                 throw new NullReferenceException("Value is null");
 
-            return (bool)value ? _strings[0] : _strings[1];
+            return (bool)value ? _strings[1] : _strings[0];
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -27,10 +27,10 @@ namespace AdminProgram.Converters
             if (value is null)
                 throw new NullReferenceException("Value is null");
 
-            if (string.CompareOrdinal((string)value, _strings[0]) == 0)
+            if (string.CompareOrdinal((string)value, _strings[1]) == 0)
                 return true;
 
-            if (string.CompareOrdinal((string)value, _strings[1]) == 0)
+            if (string.CompareOrdinal((string)value, _strings[0]) == 0)
                 return false;
 
             throw new ArgumentException("Invalid value");

@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -11,6 +12,8 @@ using System.Windows;
 using CommandLib;
 using CommandLib.Commands;
 using CommandLib.Commands.Helpers;
+using CommandLib.Commands.RemoteCommandItems;
+using CommandLib.Commands.TransferCommandItems;
 using Microsoft.Win32;
 using SecurityChannel;
 
@@ -20,11 +23,29 @@ namespace AdminProgramHost
     {
         public Host()
         {
-            SetStartInfo();
+            Logs += "Установка стартовой информации.\r\n";
+            Name = Dns.GetHostName();
+            _savedCommands = new List<ICommand>();
+
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0);
+            socket.Connect("8.8.8.8", 65530);
+
+            if (socket.LocalEndPoint is IPEndPoint endPoint)
+                IpAddress = endPoint.Address.ToString();
+
+            MacAddress = NetHelper.GetMacAddress();
+            RsaEngine.GenerateKeys(out _privateKey, out _publicKey);
         }
 
-        public void StartClientSession()
+        public bool StartClientSession()
         {
+            if (File.Exists(MacDatPath))
+            {
+                using var sr = new StreamReader(MacDatPath);
+                _mainMacAddress = sr.ReadToEnd();
+            }
+            else return false;
+            
             Logs += "Старт сессии...\r\n";
             
             if (_threadReceiveData is not null && _threadReceiveData.IsAlive)
@@ -32,6 +53,8 @@ namespace AdminProgramHost
             
             _threadReceiveData = new Thread(OpenClient);
             _threadReceiveData.Start();
+            
+            return true;
         }
 
         public void WaitThread()
@@ -44,18 +67,32 @@ namespace AdminProgramHost
         public bool SetAutorunValue(bool isAutorun)
         {
             Logs += "Установка автозапуска.\r\n";
-            var path = Assembly.GetExecutingAssembly().Location;
-            var reg = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run\");
+            var directory = new DirectoryInfo(Environment.CurrentDirectory);
+            var path = directory.GetFiles("*.exe").FirstOrDefault();
 
-            if (reg is null)
+            if (path is null)
+                return false;
+            
+            var regCurrentUser = Registry.CurrentUser.CreateSubKey(
+                @"Software\Microsoft\Windows\CurrentVersion\Run\");
+            var regLocalMachine = Registry.LocalMachine.CreateSubKey(
+                @"Software\Microsoft\Windows\CurrentVersion\Run\");
+
+            if (regCurrentUser is null || regLocalMachine is null)
                 return false;
 
             try
             {
                 if (isAutorun)
-                    reg.SetValue(Name + "Program", path);
+                {
+                    regCurrentUser.SetValue(Name + "Program", path.FullName);
+                    regLocalMachine.SetValue(Name + "Program", path.FullName);
+                }
                 else
-                    reg.DeleteValue(Name + "Program");
+                {
+                    regCurrentUser.DeleteValue(Name + "Program");
+                    regLocalMachine.DeleteValue(Name + "Program");
+                }
             }
             catch
             {
@@ -67,27 +104,6 @@ namespace AdminProgramHost
             return true;
         }
 
-        private void SetStartInfo()
-        {
-            Logs += "Установка стартовой информации.\r\n";
-            Name = Dns.GetHostName();
-
-            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0);
-            socket.Connect("8.8.8.8", 65530);
-
-            if (socket.LocalEndPoint is IPEndPoint endPoint)
-                IpAddress = endPoint.Address.ToString();
-
-            if (File.Exists(MacDatPath))
-            {
-                using var sr = new StreamReader(MacDatPath);
-                _mainMacAddress = sr.ReadToEnd();
-            }
-
-            MacAddress = NetHelper.GetMacAddress();
-            RsaEngine.GenerateKeys(out _privateKey, out _publicKey);
-        }
-
         /// <summary>
         /// Метод включения клиента в режим прослушки сети.
         /// </summary>
@@ -95,18 +111,16 @@ namespace AdminProgramHost
         {
             _forceClose = false;
             var restart = false;
-            _remoteIp = string.IsNullOrEmpty(_mainMacAddress) 
-                ? new IPEndPoint(IPAddress.Any, 0) 
-                : GetEndPoint();
+            _endPoint = GetEndPoint();
             _client = new UdpClient(NetHelper.UdpPort);
 
             try
             {
-                while (true)
+                while (!_forceClose)
                 {
                     Logs += "Открытие клиента.\r\n";
                     // Шаг 1: принимаем данные.
-                    var data = _client.Receive(ref _remoteIp);
+                    var data = _client.Receive(ref _endPoint);
 
                     // Шаг 2: декодируем данные в датаграмму.
                     var datagram = Datagram.FromBytes(data);
@@ -116,9 +130,7 @@ namespace AdminProgramHost
                     Logs += "Получена команда: " + datagram.Type.FullName + "\r\n";
                     
                     // Шаг 4: выполняем команду.
-                    var result = command is MessageCommand { IsSystem: true }
-                        ? SetMacAddress(command.Execute())
-                        : command.Execute();
+                    var result = CommandProcessing(command);
                     Logs += "Результат: " + result.Status + "\r\n";
 
                     // Шаг 5: обновляем ключи.
@@ -134,7 +146,7 @@ namespace AdminProgramHost
                     var resultDatagramBytes = resultDatagram.ToBytes();
 
                     // Шаг 8: отправляем новую датаграмму.
-                    _client.Send(resultDatagramBytes, resultDatagramBytes.Length, _remoteIp);
+                    _client.Send(resultDatagramBytes, resultDatagramBytes.Length, _endPoint);
                     Logs += "Отправка результата.\r\n";
                 }
             }
@@ -151,7 +163,7 @@ namespace AdminProgramHost
                 var datagram = new Datagram(result.ToBytes(), null, typeof(CommandResult));
                 var datagramBytes = datagram.ToBytes();
 
-                _client.Send(datagramBytes, datagramBytes.Length, _remoteIp);
+                _client.Send(datagramBytes, datagramBytes.Length, _endPoint);
             }
             finally
             {
@@ -169,6 +181,34 @@ namespace AdminProgramHost
             ExportLogs(Logs);
         }
 
+        private CommandResult CommandProcessing(ICommand command)
+        {
+            switch (command.Type)
+            {
+                case CommandType.Execute:
+                    var result = command.Execute();
+                            
+                    if (command is RemoteCommand or TransferCommand)
+                        _savedCommands.Add(command);
+                            
+                    return result;
+                case CommandType.Abort:
+                    var savedCommand = _savedCommands.FirstOrDefault(thisCommand 
+                        => thisCommand.GetType() == command.GetType());
+                            
+                    if (savedCommand is null)
+                        return new CommandResult(CommandResultStatus.Failed, null);
+
+                    savedCommand.Abort();
+                    _savedCommands.Remove(savedCommand);
+                    
+                    return new CommandResult(CommandResultStatus.Successed, null);
+                case CommandType.System:
+                default:
+                    return SetMacAddress(command.Execute());
+            }
+        }
+        
         private CommandResult SetMacAddress(CommandResult commandResult)
         {
             Logs += "Установка мак-адреса.\r\n";
@@ -176,7 +216,7 @@ namespace AdminProgramHost
                 return new CommandResult(CommandResultStatus.Failed, null);
 
             _mainMacAddress = Encoding.Unicode.GetString(commandResult.Data);
-            _remoteIp = GetEndPoint();
+            _endPoint = GetEndPoint();
 
             using var sw = new StreamWriter(MacDatPath, false);
             sw.Write(_mainMacAddress);
@@ -188,26 +228,27 @@ namespace AdminProgramHost
         private IPEndPoint GetEndPoint()
         {
             Logs += "Получение конечной точки.\r\n";
-            var arpProcess = new Process
+            var arpProcess = Process.Start(new ProcessStartInfo("arp", $"-a") // | find \"{_mainMacAddress}\"
             {
-                StartInfo =
-                {
-                    FileName = "arp",
-                    Arguments = "-a | find \"" + _mainMacAddress + '\"',
-                    StandardOutputEncoding = Encoding.Unicode,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                }
-            };
-            arpProcess.Start();
+                StandardOutputEncoding = Encoding.UTF8,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            });
             
-            var cmdOutput = arpProcess.StandardOutput.ReadToEnd();
-            const string pattern = @"([1-2][0-5]*\.?){4}";
+            var cmdOutput = arpProcess?.StandardOutput.ReadToEnd();
 
-            var match = Regex.Match(cmdOutput, pattern);
-            Logs += "Конечная точка — " + match.Value + ":" + Port + "\r\n";
-            return new IPEndPoint(IPAddress.Parse(match.Value), Port);
+            if (string.IsNullOrEmpty(cmdOutput))
+                return new IPEndPoint(IPAddress.Any, NetHelper.UdpPort);
+            
+            const string pattern = @"(\d{0,3}\.){3}\d{0,3}";
+            Match match;
+            
+            do match = Regex.Match(cmdOutput, pattern, RegexOptions.IgnoreCase);
+            while (match.Value.EndsWith("255"));
+            
+            Logs += "Конечная точка — " + match.Value + ":" + NetHelper.UdpPort + "\r\n";
+            return new IPEndPoint(IPAddress.Parse(match.Value), NetHelper.UdpPort);
         }
 
         private static void ExportLogs(string logs)

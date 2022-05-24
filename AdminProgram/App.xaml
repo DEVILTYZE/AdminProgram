@@ -18,7 +18,9 @@
         <converters:PowerOnButtonTextConverter x:Key="PowerOnButtonText" />
         <converters:ScanButtonTextConverter x:Key="ScanButtonText" />
         <converters:RefreshButtonTextConverter x:Key="RefreshButtonText" />
+        <converters:StatusPowerBoolConverter x:Key="StatusBoolPower" />
         <converters:StatusBoolConverter x:Key="StatusBool" />
+        <converters:OppositeBoolConverter x:Key="OppositeBool" />
         <!-- Main -->
         <Style x:Key="Font">
             <Setter Property="Control.FontSize" Value="20" />
