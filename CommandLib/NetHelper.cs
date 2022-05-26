@@ -23,13 +23,17 @@ namespace CommandLib
     
     public static class NetHelper
     {
-        private static readonly string RequestPath = Environment.CurrentDirectory + "\\request.txt";
-        
-        public const int AutoPort = 0;
-        public const int UdpPort = 30003;
-        public const int FtpPort = 20;
-        public const int Timeout = 5000;
-        public const int LoadTimeout = 30000;
+        private static readonly string RequestPath = Environment.CurrentDirectory + "\\request.apd";
+        private static readonly string LocationPath = Environment.CurrentDirectory + "\\location.apd";
+
+        public const int CommandPort = 51000;
+        public const int RemotePort = 52000;
+        public const int RemoteControlPort = 52001;
+        public const int CloseRemotePort = 51999;
+        public const int TransferPort = 49500;
+        public const int CloseTransferPort = 49501;
+        public const int Timeout = 2500;
+        public const int LoadTimeout = 20000;
         public const int MaxFileLength = 157286400;
 
         public static byte[] GetMagicPacket(string mac)
@@ -109,8 +113,8 @@ namespace CommandLib
             return key is not null;
         }
 
-        public static bool SetPort(int port, int otherPort, string protocol, string ipAddress, 
-            int enabled, string infoString, int leaseInfo)
+        public static bool SetPort(int port, int otherPort, string protocol, string ipAddress, int enabled, 
+            string infoString, int leaseInfo)
         {
             const string serviceType = "<serviceType>urn:schemas-upnp-org:service:WANIPConnection:1</serviceType>";
             const string controlUrlTag = "<controlURL>";
@@ -120,7 +124,18 @@ namespace CommandLib
 
             var requestString = GetRequestString(RequestPath, port, otherPort, protocol, ipAddress, enabled, infoString,
                 leaseInfo);
-            var location = GetLocation();
+
+            string location;
+            
+            if (File.Exists(LocationPath))
+            {
+                using var sr = new StreamReader(LocationPath);
+                location = sr.ReadToEnd();
+                
+                return AddPort(location, requestString);
+            }
+            
+            location = GetLocation();
             var request = (HttpWebRequest)WebRequest.Create(location);
             request.Method = "GET";
             request.UserAgent = "Microsoft-Windows/6.1 UpnP/1.0";
@@ -152,6 +167,11 @@ namespace CommandLib
                 "</controlURL>", indexControlUrl, StringComparison.Ordinal)];
             location = location[..location.IndexOf('/', 8)] + controlUrl;
             response.Close();
+
+            using (var sw = new StreamWriter(LocationPath))
+            {
+                sw.Write(location);
+            }
 
             return AddPort(location, requestString);
         }

@@ -35,6 +35,7 @@ namespace AdminProgramHost
 
             MacAddress = NetHelper.GetMacAddress();
             RsaEngine.GenerateKeys(out _privateKey, out _publicKey);
+            SetPorts(IpAddress);
         }
 
         public bool StartClientSession()
@@ -112,7 +113,7 @@ namespace AdminProgramHost
             _forceClose = false;
             var restart = false;
             _endPoint = GetEndPoint();
-            _client = new UdpClient(NetHelper.UdpPort);
+            _client = new UdpClient(NetHelper.CommandPort);
 
             try
             {
@@ -239,7 +240,7 @@ namespace AdminProgramHost
             var cmdOutput = arpProcess?.StandardOutput.ReadToEnd();
 
             if (string.IsNullOrEmpty(cmdOutput))
-                return new IPEndPoint(IPAddress.Any, NetHelper.UdpPort);
+                return new IPEndPoint(IPAddress.Any, NetHelper.CommandPort);
             
             const string pattern = @"(\d{0,3}\.){3}\d{0,3}";
             Match match;
@@ -247,8 +248,34 @@ namespace AdminProgramHost
             do match = Regex.Match(cmdOutput, pattern, RegexOptions.IgnoreCase);
             while (match.Value.EndsWith("255"));
             
-            Logs += "Конечная точка — " + match.Value + ":" + NetHelper.UdpPort + "\r\n";
-            return new IPEndPoint(IPAddress.Parse(match.Value), NetHelper.UdpPort);
+            Logs += "Конечная точка — " + match.Value + ":" + NetHelper.CommandPort + "\r\n";
+            return new IPEndPoint(IPAddress.Parse(match.Value), NetHelper.CommandPort);
+        }
+
+        private static void SetPorts(string ipAddress)
+        {
+            const string udpString = "UDP";
+            const string tcpString = "TCP";
+            const int countOfRepeat = 5;
+            var ports = new[]
+            {
+                NetHelper.CommandPort, NetHelper.RemotePort, NetHelper.RemoteControlPort, NetHelper.CloseRemotePort, 
+                NetHelper.TransferPort, NetHelper.TransferPort, NetHelper.CloseTransferPort
+            };
+            var protocols = new[] { udpString, udpString, udpString, udpString, udpString, tcpString, udpString };
+            
+            for (var i = 0; i < ports.Length; ++i)
+            for (var j = 0; j < countOfRepeat; ++j)
+                if (NetHelper.SetPort(
+                        ports[i],
+                        ports[i],
+                        protocols[i],
+                        ipAddress,
+                        1,
+                        "AdminProgramHost",
+                        0
+                    ))
+                    break;
         }
 
         private static void ExportLogs(string logs)

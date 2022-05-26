@@ -80,6 +80,11 @@ namespace CommandLib.Commands.RemoteCommandItems
             }
         }
 
+        private void RemoteControl(object obj)
+        {
+            // TODO: Доделать...
+        }
+
         private static List<byte[]> CutImageBytes(byte[] bytes, byte countOfBlocks)
         {
             var list = new List<byte[]>(countOfBlocks);

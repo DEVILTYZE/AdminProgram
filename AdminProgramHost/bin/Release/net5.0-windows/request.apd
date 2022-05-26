@@ -1,0 +1,13 @@
+<?xml version=\"1.0\"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">
+	<SOAP-ENV:Body><m:AddPortMapping xmlns:m=\"urn:schemas-upnp-org:service:WANIPConnection:1\">
+		<NewRemoteHost xmlns:dt=\"urn:schemas-microsoft-com:datatypes\" dt:dt=\"string\"></NewRemoteHost>
+		<NewExternalPort xmlns:dt=\"urn:schemas-microsoft-com:datatypes\" dt:dt=\"ui2\">[PORT_INFO_1]</NewExternalPort>
+		<NewProtocol xmlns:dt=\"urn:schemas-microsoft-com:datatypes\" dt:dt=\"string\">[PROTOCOL_INFO]</NewProtocol>
+		<NewInternalPort xmlns:dt=\"urn:schemas-microsoft-com:datatypes\" dt:dt=\"ui2\">[PORT_INFO_2]</NewInternalPort>
+		<NewInternalClient xmlns:dt=\"urn:schemas-microsoft-com:datatypes\" dt:dt=\"string\">[IP_ADDRESS_INFO]</NewInternalClient>
+		<NewEnabled xmlns:dt=\"urn:schemas-microsoft-com:datatypes\" dt:dt=\"boolean\">[ENABLED_INFO]</NewEnabled>
+		<NewPortMappingDescription xmlns:dt=\"urn:schemas-microsoft-com:datatypes\" dt:dt=\"string\">[INFO_STRING]</NewPortMappingDescription>
+		<NewLeaseDuration xmlns:dt=\"urn:schemas-microsoft-com:datatypes\" dt:dt=\"ui4\">[LEASE_INFO]</NewLeaseDuration>
+	</m:AddPortMapping>
+</SOAP-ENV:Body></SOAP-ENV:Envelope>

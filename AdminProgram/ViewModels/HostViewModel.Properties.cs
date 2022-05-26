@@ -21,6 +21,7 @@ namespace AdminProgram.ViewModels
         private Host _selectedHost;
         private string _transferMessage;
         private AdminContext _db;
+        private bool _hasDataBase;
         private IPAddress _currentIpAddress => _currentHost.AddressList.First(ip => _localNetworks.Any(localNet
             => ip.ToString().StartsWith(localNet)));
 

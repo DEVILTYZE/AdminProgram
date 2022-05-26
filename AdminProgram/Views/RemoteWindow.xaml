@@ -17,7 +17,12 @@
         <viewModels:RemoteViewModel />
     </Window.DataContext>
     <Grid>
-        <InkCanvas>
+        <InkCanvas x:Name="Screen"
+                   KeyDown="Screen_OnKeyDown"
+                   MouseMove="Screen_OnMouseMove"
+                   MouseWheel="Screen_OnMouseWheel"
+                   MouseLeftButtonUp="Screen_OnMouseLeftButtonUp"
+                   MouseRightButtonUp="Screen_OnMouseRightButtonUp">
             <Image x:Name="ScreenImage" Source="{Binding ImageScreen}" />
         </InkCanvas>
     </Grid>

@@ -30,7 +30,8 @@ namespace AdminProgram.ViewModels
             TransferThreads = new ThreadList();
             ScanThreads = new ThreadList();
             RefreshThreads = new ThreadList();
-            InitializeDb();
+            _hasDataBase = InitializeDb();
+            
 
             // Есть ли доступ в сеть.
             if (!NetworkInterface.GetIsNetworkAvailable())
@@ -39,13 +40,12 @@ namespace AdminProgram.ViewModels
             // Текущий хост.
             _currentHost = Dns.GetHostEntry(Dns.GetHostName());
 
-            EnablePortIfItDisabled(NetHelper.UdpPort);
-            EnablePortIfItDisabled(NetHelper.FtpPort, "TCP");
-
             // Находим остальные ПК в локальной сети и добавляем их в словарь.
             foreach (var ipAddress in
                      _currentHost.AddressList.Where(thisIp => thisIp.AddressFamily == AddressFamily.InterNetwork))
                 CreateMacAddressTable(ipAddress.ToString());
+            
+            Refresh();
         }
 
         /// <summary>
@@ -97,7 +97,8 @@ namespace AdminProgram.ViewModels
             var host = (Host)obj;
             host.Status = HostStatus.Loading;
             var client = new UdpClient();
-            var publicKey = NetHelper.GetPublicKeyOrDefault(client, host.EndPoint, NetHelper.Timeout);
+            var endPoint = new IPEndPoint(IPAddress.Parse(host.IpAddress), NetHelper.CommandPort);
+            var publicKey = NetHelper.GetPublicKeyOrDefault(client, endPoint, NetHelper.Timeout);
             host.Status = publicKey.HasValue ? HostStatus.On : NetHelper.Ping(host.IpAddress);
         }
 
@@ -121,14 +122,14 @@ namespace AdminProgram.ViewModels
             
             var client = new UdpClient();
             var magicPacket = NetHelper.GetMagicPacket(host.MacAddress);
-            var endPoint = host.EndPoint;
+            var endPoint = new IPEndPoint(IPAddress.Parse(host.IpAddress), NetHelper.CommandPort);
 
             try
             {
                 // Отправка магического пакета.
                 var currentIp = _currentIpAddress.ToString();
                 var broadcastIp = currentIp[..currentIp.LastIndexOf('.')] + ".255";
-                client.Send(magicPacket, magicPacket.Length, new IPEndPoint(IPAddress.Parse(broadcastIp), NetHelper.UdpPort));
+                client.Send(magicPacket, magicPacket.Length, new IPEndPoint(IPAddress.Parse(broadcastIp), NetHelper.CommandPort));
 
                 // Получение открытого ключа после включения ПК.
                 var publicKey = NetHelper.GetPublicKeyOrDefault(client, endPoint, NetHelper.LoadTimeout);
@@ -173,7 +174,7 @@ namespace AdminProgram.ViewModels
                 return;
             
             var client = new UdpClient();
-            var endPoint = host.EndPoint;
+            var endPoint = new IPEndPoint(IPAddress.Parse(host.IpAddress), NetHelper.CommandPort);
             var publicKey = NetHelper.GetPublicKeyOrDefault(client, endPoint, NetHelper.Timeout);
 
             if (!publicKey.HasValue)
@@ -221,7 +222,7 @@ namespace AdminProgram.ViewModels
                 return;
             
             var (host, path) = ((Host, string))obj;
-            var endPoint = host.EndPoint;
+            var endPoint = new IPEndPoint(IPAddress.Parse(host.IpAddress), NetHelper.TransferPort);
             var client = new UdpClient();
             var publicKey = NetHelper.GetPublicKeyOrDefault(client, endPoint, NetHelper.Timeout); 
             
@@ -229,7 +230,7 @@ namespace AdminProgram.ViewModels
                 return;
 
             var keys = RsaEngine.GetKeys();
-            var command = new TransferCommand(new TransferObject(host.IpAddress, NetHelper.UdpPort, 
+            var command = new TransferCommand(new TransferObject(host.IpAddress, NetHelper.TransferPort, 
                     new RsaKey(keys[1]), path).ToBytes());
             var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), typeof(TransferCommand),
                 publicKey.Value);
@@ -237,24 +238,29 @@ namespace AdminProgram.ViewModels
             client.Send(bytes, bytes.Length, endPoint);
 
             var thread = new Thread(Transfer);
-            thread.Start((new IPEndPoint(endPoint.Address, NetHelper.FtpPort), host));
+            thread.Start((new IPEndPoint(endPoint.Address, NetHelper.TransferPort), host));
 
             client.Client.ReceiveTimeout = NetHelper.Timeout;
             bytes = client.Receive(ref endPoint);
             datagram = Datagram.FromBytes(bytes);
             var result = CommandResult.FromBytes(datagram.GetData(keys[0]));
+            host.IsTransfers = result.Status == CommandResultStatus.Successed;
         }
 
         private void Transfer([CanBeNull] object obj)
         {
             if (obj is null)
                 return;
-            
+
             var (endPoint, host) = ((IPEndPoint, Host))obj;
+            
+            while (!host.IsTransfers)
+                Thread.Sleep(100);
+            
             TcpListener server = null;
             var responseList = new List<List<byte>>();
             var namesList = new List<string>();
-            
+
             try
             {
                 server = new TcpListener(endPoint);
@@ -329,7 +335,7 @@ namespace AdminProgram.ViewModels
         {
             SelectedHost.IsTransfers = false;
             var client = new UdpClient();
-            var endPoint = SelectedHost.EndPoint;
+            var endPoint = new IPEndPoint(IPAddress.Parse(SelectedHost.IpAddress), NetHelper.CloseTransferPort);
             var publicKey = NetHelper.GetPublicKeyOrDefault(client, endPoint, NetHelper.Timeout);
             var keys = RsaEngine.GetKeys();
             var command = new TransferCommand(null, keys[1]) { Type = CommandType.Abort };
@@ -350,7 +356,7 @@ namespace AdminProgram.ViewModels
             TransferThreads.WaitThreads();
         }
 
-        public IPEndPoint GetOurIpEndPoint() => new(_currentIpAddress, NetHelper.UdpPort);
+        public IPEndPoint GetOurIpEndPoint() => new(_currentIpAddress, NetHelper.CommandPort);
 
         private void AddHost([NotNull] object obj)
         {
@@ -381,15 +387,16 @@ namespace AdminProgram.ViewModels
                         Hosts.Add(host);
                         OnPropertyChanged(nameof(Hosts));
 
-                        _db.Hosts.Add(new HostDb
-                        {
-                            Name = host.Name,
-                            IpAddress = host.IpAddress,
-                            MacAddress = host.MacAddress
-                        });
+                        if (_hasDataBase)
+                            _db.Hosts.Add(new HostDb
+                            {
+                                Name = host.Name,
+                                IpAddress = host.IpAddress,
+                                MacAddress = host.MacAddress
+                            });
                     }
-                    else if (string.CompareOrdinal(host.IpAddress, hostInHosts.IpAddress) != 0 ||
-                             string.CompareOrdinal(host.Name, hostInHosts.Name) != 0)
+                    else if ((string.CompareOrdinal(host.IpAddress, hostInHosts.IpAddress) != 0 ||
+                             string.CompareOrdinal(host.Name, hostInHosts.Name) != 0) && _hasDataBase)
                     {
                         var hostInDb = _db.Hosts.ToList().FirstOrDefault(thisHost =>
                             string.CompareOrdinal(host.MacAddress, thisHost.MacAddress) == 0);
@@ -402,7 +409,8 @@ namespace AdminProgram.ViewModels
                         _db.Entry(hostInDb).State = EntityState.Modified;
                     }
 
-                    _db.SaveChanges();
+                    if (_hasDataBase)
+                        _db.SaveChanges();
                 }));
             }
         }
@@ -460,30 +468,7 @@ namespace AdminProgram.ViewModels
             return result.Status == CommandResultStatus.Successed;
         }
 
-        private void EnablePortIfItDisabled(int port, string portType = "UDP", string ip = "")
-        {
-            var hostDb = _db.Hosts.FirstOrDefault();
-            var host = hostDb is not null ? new Host(hostDb) : null;
-            const int countOfRepeat = 5; 
-            ip = string.IsNullOrEmpty(ip) ? GetOurIpEndPoint().Address.ToString() : ip;
-
-            if (host is not null && NetHelper.PortIsEnabled(host.IpAddress, port)) 
-                return;
-            
-            for (var i = 0; i < countOfRepeat; ++i)
-                if (NetHelper.SetPort(
-                        port,
-                        port,
-                        portType,
-                        ip,
-                        1,
-                        "AdminProgram",
-                        0
-                        ))
-                    return;
-        }
-
-        private void InitializeDb()
+        private bool InitializeDb()
         {
             try
             {
@@ -492,12 +477,13 @@ namespace AdminProgram.ViewModels
             }
             catch (Exception)
             {
-                return;
+                return false;
             }
 
             Hosts = new ObservableCollection<Host>(_db.Hosts.Local.Select(thisHost => new Host(thisHost)));
             OnPropertyChanged(nameof(Hosts));
-            Refresh();
+            
+            return true;
         }
     }
 }

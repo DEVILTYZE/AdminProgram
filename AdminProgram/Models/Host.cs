@@ -16,9 +16,7 @@ namespace AdminProgram.Models
         private readonly string _macAddress;
         private HostStatus _status;
         private bool _isTransfers;
-        
-        public IPEndPoint EndPoint => new(IPAddress.Parse(IpAddress), NetHelper.UdpPort);
-        
+
         public string Name
         {
             get => _name;
@@ -106,6 +104,8 @@ namespace AdminProgram.Models
             MacAddress = hostDb.MacAddress;
             Status = HostStatus.Unknown;
         }
+
+        public override string ToString() => MacAddress + " " + IpAddress + " " + Name;
 
         public event PropertyChangedEventHandler PropertyChanged;
         [NotifyPropertyChangedInvocator]

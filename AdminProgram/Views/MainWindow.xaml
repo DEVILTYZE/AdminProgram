@@ -111,6 +111,7 @@
                 <TextBox Text="{Binding TransferMessage}"/>
                 <Button IsEnabled="{Binding SelectedHost.IsTransfers, 
                     Converter={StaticResource OppositeBool}}"
+                    Content="Скопировать файлы"
                     Click="TransferButton_OnClick"/>
             </StackPanel>
         </StackPanel>
