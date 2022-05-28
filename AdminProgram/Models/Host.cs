@@ -1,12 +1,10 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Linq;
-using System.Net;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 using AdminProgram.Annotations;
 using CommandLib;
-using SecurityChannel;
 
 namespace AdminProgram.Models
 {
@@ -16,6 +14,7 @@ namespace AdminProgram.Models
         private readonly string _macAddress;
         private HostStatus _status;
         private bool _isTransfers;
+        private TcpListener _transferServer;
 
         public string Name
         {
@@ -60,7 +59,7 @@ namespace AdminProgram.Models
                 if (value.Length is > 17 or < 11)
                     throw new ArgumentException("Invalid IP-address length", value);
 
-                if (value.Any(symbol => symbol is not ':' && !char.IsLetterOrDigit(symbol)))
+                if (value.Any(symbol => symbol is not '-' && !char.IsLetterOrDigit(symbol)))
                     throw new ArgumentException("Invalid symbols in IP-address", value);
 
                 _macAddress = value;
@@ -88,6 +87,16 @@ namespace AdminProgram.Models
             }
         }
 
+        public TcpListener TransferServer
+        {
+            get => _transferServer;
+            set
+            {
+                _transferServer = value;
+                OnPropertyChanged(nameof(TransferServer));
+            }
+        }
+        
         private Host() { }
 
         public Host(string name, string ipAddress, string macAddress) : this()

@@ -21,14 +21,15 @@ namespace AdminProgram.ViewModels
         private Host _selectedHost;
         private string _transferMessage;
         private AdminContext _db;
-        private bool _hasDataBase;
-        private IPAddress _currentIpAddress => _currentHost.AddressList.First(ip => _localNetworks.Any(localNet
+        private readonly bool _hasDataBase;
+        private readonly ThreadList _transferThreads;
+        
+        private IPAddress CurrentIpAddress => _currentHost.AddressList.First(ip => _localNetworks.Any(localNet
             => ip.ToString().StartsWith(localNet)));
 
         public ObservableCollection<Host> Hosts { get; set; }
         public ThreadList ScanThreads { get; }
         public ThreadList RefreshThreads { get; }
-        public ThreadList TransferThreads { get; }
 
         public Host SelectedHost
         {

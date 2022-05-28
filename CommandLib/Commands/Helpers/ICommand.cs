@@ -5,8 +5,7 @@ namespace CommandLib.Commands.Helpers
     public enum CommandType
     {
         Execute = 1,
-        Abort = -1,
-        System = 0
+        Abort = -1
     }
     
     public interface ICommand

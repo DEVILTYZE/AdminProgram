@@ -27,11 +27,10 @@ namespace AdminProgram.ViewModels
     {
         public HostViewModel()
         {
-            TransferThreads = new ThreadList();
             ScanThreads = new ThreadList();
             RefreshThreads = new ThreadList();
+            _transferThreads = new ThreadList();
             _hasDataBase = InitializeDb();
-            
 
             // Есть ли доступ в сеть.
             if (!NetworkInterface.GetIsNetworkAvailable())
@@ -127,26 +126,17 @@ namespace AdminProgram.ViewModels
             try
             {
                 // Отправка магического пакета.
-                var currentIp = _currentIpAddress.ToString();
+                var currentIp = CurrentIpAddress.ToString();
                 var broadcastIp = currentIp[..currentIp.LastIndexOf('.')] + ".255";
                 client.Send(magicPacket, magicPacket.Length, new IPEndPoint(IPAddress.Parse(broadcastIp), NetHelper.CommandPort));
 
                 // Получение открытого ключа после включения ПК.
                 var publicKey = NetHelper.GetPublicKeyOrDefault(client, endPoint, NetHelper.LoadTimeout);
 
-                if (!publicKey.HasValue)
-                {
-                    host.Status = HostStatus.Off;
+                if (publicKey.HasValue) 
                     return;
-                }
-
-                var keys = RsaEngine.GetKeys();
-
-                while (!SendOurMacAddress(client, endPoint, keys[0], keys[1], publicKey.Value))
-                {
-                    Thread.Sleep(500);
-                }
-                // TODO: Сделать так, чтобы клиент смог принять наш мак адрес.
+                
+                host.Status = HostStatus.Off;
             }
             catch (Exception)
             {
@@ -194,14 +184,7 @@ namespace AdminProgram.ViewModels
             bytes = client.Receive(ref endPoint);
             datagram = Datagram.FromBytes(bytes);
             var result = CommandResult.FromBytes(datagram.GetData(keys[0]));
-
-            if (result.Status != CommandResultStatus.Successed)
-            {
-                host.Status = HostStatus.On;
-                return;
-            }
-            
-            host.Status = HostStatus.Off;
+            host.Status = result.Status == CommandResultStatus.Successed ? HostStatus.Off : HostStatus.On;
         }
 
         public bool TransferFiles()
@@ -211,7 +194,7 @@ namespace AdminProgram.ViewModels
             
             var thread = new Thread(TransferFiles);
             thread.Start((SelectedHost, TransferMessage));
-            TransferThreads.Add(thread);
+            _transferThreads.Add(thread);
 
             return true;
         }
@@ -222,23 +205,24 @@ namespace AdminProgram.ViewModels
                 return;
             
             var (host, path) = ((Host, string))obj;
-            var endPoint = new IPEndPoint(IPAddress.Parse(host.IpAddress), NetHelper.TransferPort);
+            var endPoint = new IPEndPoint(IPAddress.Parse(host.IpAddress), NetHelper.TransferCommandPort);
             var client = new UdpClient();
             var publicKey = NetHelper.GetPublicKeyOrDefault(client, endPoint, NetHelper.Timeout); 
             
             if (!publicKey.HasValue)
                 return;
 
+            Thread.Sleep(1000);
             var keys = RsaEngine.GetKeys();
-            var command = new TransferCommand(new TransferObject(host.IpAddress, NetHelper.TransferPort, 
-                    new RsaKey(keys[1]), path).ToBytes());
+            var command = new TransferCommand(new TransferObject(host.IpAddress, NetHelper.TransferCommandPort, path)
+                .ToBytes(), keys[1]);
             var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), typeof(TransferCommand),
                 publicKey.Value);
             var bytes = datagram.ToBytes();
             client.Send(bytes, bytes.Length, endPoint);
-
+            
             var thread = new Thread(Transfer);
-            thread.Start((new IPEndPoint(endPoint.Address, NetHelper.TransferPort), host));
+            thread.Start((new IPEndPoint(endPoint.Address, NetHelper.TransferPort), host, keys[0]));
 
             client.Client.ReceiveTimeout = NetHelper.Timeout;
             bytes = client.Receive(ref endPoint);
@@ -252,68 +236,76 @@ namespace AdminProgram.ViewModels
             if (obj is null)
                 return;
 
-            var (endPoint, host) = ((IPEndPoint, Host))obj;
-            
-            while (!host.IsTransfers)
-                Thread.Sleep(100);
-            
-            TcpListener server = null;
-            var responseList = new List<List<byte>>();
+            var (endPoint, host, privateKey) = ((IPEndPoint, Host, RSAParameters))obj;
+            var responseList = new List<byte[]>();
             var namesList = new List<string>();
+            TcpClient client = null;
 
             try
             {
-                server = new TcpListener(endPoint);
-                server.Start();
+                host.TransferServer = new TcpListener(endPoint);
+                host.TransferServer.Start();
+                const int maxCountOfTries = 10;
+                var currentTry = 0;
+
+                while (currentTry < maxCountOfTries)
+                {
+                    if (host.TransferServer.Pending())
+                    {
+                        client = host.TransferServer.AcceptTcpClient();
+                        break;
+                    }
+
+                    Thread.Sleep(150);
+                    ++currentTry;
+                }
                 
-                var client = server.AcceptTcpClient();
+                if (client is null)
+                {
+                    host.TransferServer.Stop();
+                    
+                    return;
+                }
+                
                 client.Client.ReceiveTimeout = NetHelper.Timeout;
                 var countOfFiles = client.GetStream().ReadByte();
                 
-                for (var i = 0; i < countOfFiles && host.IsTransfers && TransferThreads.IsAlive; ++i)
+                for (var i = 0; i < countOfFiles && host.IsTransfers && _transferThreads.IsAlive; ++i)
                 {
-                    responseList.Add(new List<byte>(NetHelper.MaxFileLength));
-                    
-                    using (var stream = client.GetStream())
-                    {
-                        var data = new byte[4];
-                        stream.Read(data, 0, data.Length);
-                        var length = BitConverter.ToInt32(data);
-                        var name = new StringBuilder();
+                    using var stream = client.GetStream();
+                    const int maxLength = 256;
+                    var data = new byte[4];
+                    stream.Read(data, 0, data.Length);
+                    var length = BitConverter.ToInt32(data);
+                    var currentByteList = new List<byte>(maxLength);
 
-                        while (length > 0)
-                        {
-                            data = new byte[length <= 256 ? length : 256];
-                            stream.Read(data, 0, data.Length);
-                            length -= data.Length;
-                            name.Append(Encoding.Unicode.GetString(data));
-                        }
-                        
-                        namesList.Add(name.ToString());
-                        data = new byte[4];
+                    while (length > 0)
+                    {
+                        data = new byte[length <= maxLength ? length : maxLength];
                         stream.Read(data, 0, data.Length);
-                        length = BitConverter.ToInt32(data);
-                    
-                        while (length > 0)
-                        {
-                            data = new byte[length <= 256 ? length : 256];
-                            stream.Read(data, 0, data.Length);
-                            length -= data.Length;
-                            responseList[^1].AddRange(data);
-                        }
-                        
+                        length -= data.Length;
+                        currentByteList.AddRange(data);
                     }
-                    
-                    client.Close();
+                        
+                    var datagram = Datagram.FromBytes(currentByteList.ToArray());
+                    data = datagram.GetData(privateKey);
+                    length = BitConverter.ToInt32(new ArraySegment<byte>(data, 0, 4));
+                    data = new ArraySegment<byte>(data, 4, length).ToArray();
+                    namesList.Add(Encoding.Unicode.GetString(data));
+                    data = new ArraySegment<byte>(data, length - 1, data.Length - length + 1).ToArray();
+                    responseList.Add(data);
                 }
             }
             catch (SocketException) { }
             finally
             {
-                server?.Stop();
+                client?.Close();
+                
+                if (!host.IsTransfers)
+                    host.TransferServer?.Stop();
             }
 
-            for (var i = 0; i < responseList.Count && host.IsTransfers && TransferThreads.IsAlive; ++i)
+            for (var i = 0; i < responseList.Count && host.IsTransfers && _transferThreads.IsAlive; ++i)
             {
                 var count = 1;
                 var path = _filesDirectory + host.Name + namesList[i];
@@ -327,15 +319,16 @@ namespace AdminProgram.ViewModels
                     ++count;
                 }
                     
-                File.WriteAllBytes(path, responseList[i].ToArray());
+                File.WriteAllBytes(path, responseList[i]);
             }
+
+            host.IsTransfers = false;
         }
 
         public void CloseTransfer()
         {
-            SelectedHost.IsTransfers = false;
             var client = new UdpClient();
-            var endPoint = new IPEndPoint(IPAddress.Parse(SelectedHost.IpAddress), NetHelper.CloseTransferPort);
+            var endPoint = new IPEndPoint(IPAddress.Parse(SelectedHost.IpAddress), NetHelper.TransferCommandPort);
             var publicKey = NetHelper.GetPublicKeyOrDefault(client, endPoint, NetHelper.Timeout);
             var keys = RsaEngine.GetKeys();
             var command = new TransferCommand(null, keys[1]) { Type = CommandType.Abort };
@@ -346,17 +339,18 @@ namespace AdminProgram.ViewModels
             bytes = client.Receive(ref endPoint);
             datagram = Datagram.FromBytes(bytes);
             var result = CommandResult.FromBytes(datagram.GetData(keys[0]));
-            // TODO: Доделать...
+            SelectedHost.IsTransfers = result.Status != CommandResultStatus.Successed;
+            SelectedHost.TransferServer.Stop();
         }
 
         public void WaitAllThreads()
         {
             ScanThreads.WaitThreads();
             RefreshThreads.WaitThreads();
-            TransferThreads.WaitThreads();
+            _transferThreads.WaitThreads();
         }
 
-        public IPEndPoint GetOurIpEndPoint() => new(_currentIpAddress, NetHelper.CommandPort);
+        public IPEndPoint GetOurIpEndPoint() => new(CurrentIpAddress, NetHelper.CommandPort);
 
         private void AddHost([NotNull] object obj)
         {
@@ -373,7 +367,8 @@ namespace AdminProgram.ViewModels
             }
 
             var host = new Host(hostEntry.HostName, ip, mac);
-            Refresh(host);
+            var thread = new Thread(new ParameterizedThreadStart(Refresh));
+            thread.Start(host);
 
             lock (_locker)
             {
@@ -418,54 +413,24 @@ namespace AdminProgram.ViewModels
         private void CreateMacAddressTable(string ipAddress)
         {
             _addresses = new Dictionary<string, string>();
-            var arpProcess = new Process
+            var arpProcess = Process.Start(new ProcessStartInfo("arp", "a -N " + ipAddress)
             {
-                StartInfo =
-                {
-                    FileName = "arp",
-                    Arguments = "-a -N " + ipAddress,
                     StandardOutputEncoding = Encoding.Unicode,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     CreateNoWindow = true
-                }
-            };
-            arpProcess.Start();
+            });
 
-            var cmdOutput = arpProcess.StandardOutput.ReadToEnd();
+            var cmdOutput = arpProcess?.StandardOutput.ReadToEnd();
+            
+            if (string.IsNullOrEmpty(cmdOutput))
+                return;
+            
             var pattern = @$"({ipAddress.Split('.')[0]}\."
                           + @"(\d{0,3}\.){2}\d{0,2}[0-4])\s+(([\da-f]{2}-){5}[\da-f][\da-e])";
 
             foreach (Match match in Regex.Matches(cmdOutput, pattern))
-                _addresses.Add(match.Groups[1].Value, match.Groups[3].Value.Replace('-', ':'));
-        }
-
-        /// <summary>
-        /// Отсылает мак-адрес текущего ПК.
-        /// </summary>
-        /// <param name="client">Клиент.</param>
-        /// <param name="endPoint">Конечная точка доставки нашего мак-адреса.</param>
-        /// <param name="publicKeyToOther">Открытый ключ для хоста, куда доставляем мак-адрес.</param>
-        /// <param name="publicKey">Открытый ключ, который нам прислал ПК, которому требуется наш мак-адрес.</param>
-        /// <param name="privateKey">Закрытый ключ, которым будет расшифровано сообщение результата выполнения команды.</param>
-        /// <returns>True, если наш мак-адрес успешно записан у host.</returns>
-        private static bool SendOurMacAddress(UdpClient client, IPEndPoint endPoint, RSAParameters privateKey, 
-            RSAParameters publicKeyToOther, RSAParameters publicKey)
-        {
-            // Отправка мак-адреса нашего ПК.
-            var dataBytes = Encoding.Unicode.GetBytes(NetHelper.GetMacAddress());
-            var command = new MessageCommand(dataBytes, publicKeyToOther) { Type = CommandType.System};
-            var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), typeof(MessageCommand), publicKey);
-            var datagramBytes = datagram.ToBytes();
-            client.Send(datagramBytes, datagramBytes.Length, endPoint);
-                
-            // Проверка получения с помощью получения результата выполнения команды.
-            client.Client.ReceiveTimeout = NetHelper.Timeout;
-            var data = client.Receive(ref endPoint);
-            datagram = Datagram.FromBytes(data);
-            var result = CommandResult.FromBytes(datagram.GetData(privateKey));
-            
-            return result.Status == CommandResultStatus.Successed;
+                _addresses.Add(match.Groups[1].Value, match.Groups[3].Value);
         }
 
         private bool InitializeDb()

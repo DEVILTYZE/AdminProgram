@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Text.Json.Serialization;
 using CommandLib.Commands.Helpers;
 
 namespace CommandLib.Commands
@@ -8,6 +9,9 @@ namespace CommandLib.Commands
     [Serializable]
     public class ShutdownCommand : AbstractCommand
     {
+        [JsonConstructor]
+        public ShutdownCommand() { }
+        
         public ShutdownCommand(byte[] data, RSAParameters? publicKey = null) 
             : base(ConstHelper.ShutdownCommandId, ConstHelper.ShutdownCommandString, data, publicKey) { }
 

@@ -17,8 +17,9 @@ namespace CommandLib.Commands.RemoteCommandItems
     public class RemoteCommand : AbstractCommand
     {
         private bool _isActive;
-        private RSAParameters _publicKey;
         private ScreenMatrix _screen;
+
+        public RemoteCommand() { }
 
         public RemoteCommand(byte[] data, RSAParameters? publicKey = null)
             : base(ConstHelper.StreamCommandId, ConstHelper.StreamCommandString, data, publicKey) { }
@@ -30,7 +31,7 @@ namespace CommandLib.Commands.RemoteCommandItems
 
             try
             {
-                (remoteIp, _publicKey) = ((IPEndPoint, RSAParameters))RemoteObject.FromBytes(Data, 
+                remoteIp = (IPEndPoint)RemoteObject.FromBytes(Data, 
                     typeof(RemoteObject)).GetData();
             }
             catch (Exception)
@@ -48,6 +49,9 @@ namespace CommandLib.Commands.RemoteCommandItems
 
         private void StartRemoteConnection([CanBeNull] object obj)
         {
+            if (obj is null || !_isActive)
+                return;
+            
             var client = new UdpClient();
             var remoteIp = (IPEndPoint)obj;
             var size = DisplayTools.GetPhysicalDisplaySize();
@@ -61,7 +65,7 @@ namespace CommandLib.Commands.RemoteCommandItems
                 _screen.UpdateScreen(image);
                 
                 var imageBytes = _screen.GetUpdatedPixelsBytes();
-                var datagram = new Datagram(imageBytes, AesEngine.GetKey(), typeof(byte[]), _publicKey);
+                var datagram = new Datagram(imageBytes, AesEngine.GetKey(), typeof(byte[]), RsaPublicKey);
                 var resultBytes = datagram.ToBytes();
                 
                 var countOfBlocks = resultBytes.Length % Datagram.Length == 0 

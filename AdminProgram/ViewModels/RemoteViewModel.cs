@@ -112,7 +112,7 @@ namespace AdminProgram.ViewModels
         {
             IsAliveRemoteConnection = false;
             var client = new UdpClient();
-            var endPoint = new IPEndPoint(IPAddress.Parse(Host.IpAddress), NetHelper.CloseRemotePort);
+            var endPoint = new IPEndPoint(IPAddress.Parse(Host.IpAddress), NetHelper.RemoteCommandPort);
             var publicKey = NetHelper.GetPublicKeyOrDefault(client, endPoint, NetHelper.Timeout);
             var keys = RsaEngine.GetKeys();
             var command = new RemoteCommand(null, keys[1]) { Type = CommandType.Abort };
@@ -131,7 +131,7 @@ namespace AdminProgram.ViewModels
 
         private void Stream()
         {
-            var remoteIp = new IPEndPoint(IPAddress.Parse(Host.IpAddress), NetHelper.RemotePort);
+            var remoteIp = new IPEndPoint(IPAddress.Parse(Host.IpAddress), NetHelper.RemoteCommandPort);
             var client = new UdpClient(remoteIp.Port);
 
             try
@@ -147,8 +147,7 @@ namespace AdminProgram.ViewModels
                 } 
                 while (!publicKey.HasValue);
 
-                var remoteObject = new RemoteObject(_ourIpEndPoint.Address.ToString(), _ourIpEndPoint.Port,
-                    new RsaKey(_publicKey));
+                var remoteObject = new RemoteObject(_ourIpEndPoint.Address.ToString(), _ourIpEndPoint.Port);
                 var command = new RemoteCommand(remoteObject.ToBytes(), _publicKey);
                 var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), typeof(RemoteCommand),
                     publicKey.Value);
@@ -157,6 +156,8 @@ namespace AdminProgram.ViewModels
 
                 var thread = new Thread(Control);
                 thread.Start(publicKey);
+
+                client = new UdpClient(NetHelper.RemoteStreamPort);
                 
                 while (IsAliveRemoteConnection)
                 {

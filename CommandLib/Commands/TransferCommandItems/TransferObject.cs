@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
+using System.Text.Json.Serialization;
 using CommandLib.Commands.RemoteCommandItems;
-using SecurityChannel;
 
 namespace CommandLib.Commands.TransferCommandItems
 {
@@ -10,10 +10,11 @@ namespace CommandLib.Commands.TransferCommandItems
     {
         public string Path { get; set; }
 
-        public TransferObject(string ipAddress, int port, RsaKey key, string path) : base(ipAddress, port, key)
-            => Path = path;
+        [JsonConstructor]
+        public TransferObject() { }
 
-        public override object GetData()
-            => (new IPEndPoint(IPAddress.Parse(IpAddress), Port), Key.GetKey(), Path);
+        public TransferObject(string ipAddress, int port, string path) : base(ipAddress, port) => Path = path;
+
+        public override object GetData() => (new IPEndPoint(IPAddress.Parse(IpAddress), Port), Path);
     }
 }

@@ -43,7 +43,7 @@ namespace CommandLib
 
         public byte[] GetData(RSAParameters? rsaPrivateKey = null)
         {
-            if (!rsaPrivateKey.HasValue)
+            if (!rsaPrivateKey.HasValue || AesKey is null)
                 return Data;
             
             var aesKey = RsaEngine.Decrypt(AesKey, rsaPrivateKey.Value);

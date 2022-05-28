@@ -26,7 +26,7 @@ namespace AdminProgramHost
                 Close();
         }
 
-        private void MainWindow_OnClosed([CanBeNull]object sender, EventArgs e) => _model.WaitThread();
+        private void MainWindow_OnClosed([CanBeNull]object sender, EventArgs e) => _model.WaitThreads();
 
         private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
         {

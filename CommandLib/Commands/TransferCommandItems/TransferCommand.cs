@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading;
 using CommandLib.Annotations;
 using CommandLib.Commands.Helpers;
@@ -16,19 +17,23 @@ namespace CommandLib.Commands.TransferCommandItems
     [Serializable]
     public class TransferCommand : AbstractCommand
     {
-        private RSAParameters _publicKey;
-        
+        private bool _isActive;
+
+        [JsonConstructor]
+        public TransferCommand() { }
+
         public TransferCommand(byte[] data, RSAParameters? publicKey = null) 
             : base(ConstHelper.GetFileCommandId, ConstHelper.GetFileCommandString, data, publicKey) { }
 
         public override CommandResult Execute()
         {
-            IPEndPoint remoteIp;
+            IPEndPoint endPoint;
             string path;
+            _isActive = true;
             
             try
             {
-                (remoteIp, _publicKey, path) = ((IPEndPoint, RSAParameters, string))RemoteObject.FromBytes(Data, 
+                (endPoint, path) = ((IPEndPoint, string))RemoteObject.FromBytes(Data, 
                     typeof(TransferObject)).GetData();
             }
             catch (Exception)
@@ -45,54 +50,68 @@ namespace CommandLib.Commands.TransferCommandItems
                 return new CommandResult(CommandResultStatus.Failed, 
                     Encoding.Unicode.GetBytes(ConstHelper.FileLengthError));
 
-            if (!File.Exists(path))
+            if (!File.Exists(path) || isDirectory && !Directory.Exists(path))
                 return new CommandResult(CommandResultStatus.Failed, Encoding.Unicode.GetBytes(ConstHelper.FileError));
 
             var thread = new Thread(TransferFiles);
-            thread.Start((remoteIp, path, isDirectory));
+            thread.Start((endPoint, path, isDirectory));
 
             return new CommandResult(CommandResultStatus.Successed, Array.Empty<byte>());
         }
 
+        public override void Abort() => _isActive = false;
+
         private void TransferFiles([CanBeNull] object obj)
         {
-            if (obj is null)
+            if (obj is null || !_isActive)
                 return;
             
             var (remoteIp, path, isDirectory) = ((IPEndPoint, string, bool))obj;
             var client = new TcpClient(remoteIp);
-            var paths = isDirectory 
-                ? Directory.GetFiles(path, "*", SearchOption.AllDirectories) 
-                : new []{ path };
-            
-            if (paths.Length >= byte.MaxValue)
-                return;
 
-            using (var stream = client.GetStream())
+            try
             {
-                stream.WriteByte((byte)paths.Length);
-            }
-            
-            foreach (var filePath in paths)
-            {
-                var fInfo = new FileInfo(filePath);
-                var fileData = new byte[fInfo.Length];
+                client.Connect(remoteIp);
+                var paths = isDirectory
+                    ? Directory.GetFiles(path, "*", SearchOption.AllDirectories)
+                    : new[] { path };
 
-                using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-                    fs.Read(fileData, 0, fileData.Length);
-
-                var datagram = new Datagram(fileData, AesEngine.GetKey(), typeof(byte[]), _publicKey);
-                var fileNameByteArray = FileNameToByteArray(filePath);
-                var bytes = datagram.ToBytes();
-                bytes = fileNameByteArray.Concat(BitConverter.GetBytes(bytes.Length)).Concat(bytes).ToArray();
+                if (paths.Length >= byte.MaxValue)
+                    return;
 
                 using (var stream = client.GetStream())
                 {
-                    stream.Write(bytes, 0, bytes.Length);
+                    stream.WriteByte((byte)paths.Length);
+                }
+
+                foreach (var filePath in paths)
+                {
+                    if (!_isActive)
+                        break;
+
+                    var fInfo = new FileInfo(filePath);
+                    var fileData = new byte[fInfo.Length];
+
+                    using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                        fs.Read(fileData, 0, fileData.Length);
+
+                    var fileNameByteArray = FileNameToByteArray(filePath);
+                    var fileBytes = fileNameByteArray.Concat(fileData).ToArray();
+                    var datagram = new Datagram(fileBytes, AesEngine.GetKey(), typeof(byte[]), RsaPublicKey);
+                    var bytes = datagram.ToBytes();
+                    bytes = BitConverter.GetBytes(bytes.Length).Concat(bytes).ToArray();
+
+                    using (var stream = client.GetStream())
+                    {
+                        stream.Write(bytes, 0, bytes.Length);
+                    }
                 }
             }
-            
-            client.Close();
+            catch (SocketException) { }
+            finally
+            {
+                client.Close();
+            }
         }
 
         private static byte[] FileNameToByteArray(string filePath)

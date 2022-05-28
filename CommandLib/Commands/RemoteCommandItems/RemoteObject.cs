@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Net;
-using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using CommandLib.Commands.Helpers;
-using SecurityChannel;
 
 namespace CommandLib.Commands.RemoteCommandItems
 {
@@ -12,23 +11,21 @@ namespace CommandLib.Commands.RemoteCommandItems
     {
         public string IpAddress { get; set; }
         public int Port { get; set; }
-        public RsaKey Key { get; set; }
 
+        [JsonConstructor]
         public RemoteObject() { }
 
-        public RemoteObject(string ipAddress, int port, RsaKey key)
+        public RemoteObject(string ipAddress, int port)
         {
             IpAddress = ipAddress;
             Port = port;
-            Key = key;
         }
 
-        public virtual object GetData() =>
-            (new IPEndPoint(IPAddress.Parse(IpAddress), Port), Key.GetKey());
+        public virtual object GetData() => new IPEndPoint(IPAddress.Parse(IpAddress), Port);
 
-        public byte[] ToBytes() => JsonSerializer.SerializeToUtf8Bytes(this, ConstHelper.Options);
+        public byte[] ToBytes() => JsonSerializer.SerializeToUtf8Bytes(this, GetType(), ConstHelper.Options);
 
-        public static ICommandObject FromBytes(byte[] data, Type type) =>
-            (ICommandObject)JsonSerializer.Deserialize(data, type, ConstHelper.Options);
+        public static ICommandObject FromBytes(byte[] data, Type type) 
+            => (ICommandObject)JsonSerializer.Deserialize(data, type, ConstHelper.Options);
     }
 }

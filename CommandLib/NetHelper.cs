@@ -27,11 +27,11 @@ namespace CommandLib
         private static readonly string LocationPath = Environment.CurrentDirectory + "\\location.apd";
 
         public const int CommandPort = 51000;
-        public const int RemotePort = 52000;
+        public const int RemoteStreamPort = 52000;
         public const int RemoteControlPort = 52001;
-        public const int CloseRemotePort = 51999;
+        public const int RemoteCommandPort = 51999;
         public const int TransferPort = 49500;
-        public const int CloseTransferPort = 49501;
+        public const int TransferCommandPort = 49501;
         public const int Timeout = 2500;
         public const int LoadTimeout = 20000;
         public const int MaxFileLength = 157286400;

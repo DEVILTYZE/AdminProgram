@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Net;
+using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
@@ -17,15 +18,24 @@ namespace AdminProgramHost
         private static readonly string LogsPath = Environment.CurrentDirectory + "\\logs" + DateTime.Now.ToString(
             "yyyyMMddHHmmss") + ".txt";
 
+        private readonly object _locker = new();
         private readonly string _name, _ipAddress, _macAddress;
         private string _mainMacAddress, _logs;
-        private Thread _threadReceiveData;
+        private List<Thread> _threadReceiveDataList;
+        private List<UdpClient> _clients;
         private RSAParameters _privateKey, _publicKey;
-        private UdpClient _client;
-        private bool _forceClose;
-        private IPEndPoint _endPoint;
+        private bool _forceClose, _restart;
         private readonly List<ICommand> _savedCommands;
 
+        private string ProgramName
+        {
+            get
+            {
+                var directory = new DirectoryInfo(Environment.CurrentDirectory);
+                return directory.GetFiles("*.exe").FirstOrDefault()?.FullName;
+            }
+        }
+        
         public string Name
         {
             get => _name;
