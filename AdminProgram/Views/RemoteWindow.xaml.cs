@@ -25,7 +25,12 @@ namespace AdminProgram.Views
 
         private void RemoteWindow_OnClosed(object sender, EventArgs e)
         {
-            _model.CloseRemoteConnection();
+            if (!_model.CloseRemoteConnection())
+            {
+                MessageBox.Show("Что-то пошло не так при закрытии окна...", "Ошибка");
+                return;
+            }
+            
             _changeStatus?.Invoke(true);
         }
 

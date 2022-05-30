@@ -46,4 +46,9 @@ namespace AdminProgram.Converters
     {
         public RefreshButtonTextConverter() : base("Обновить статусы", "Обновление...") { }
     }
+
+    public class TransferButtonTextConverter : BoolStringConverter
+    {
+        public TransferButtonTextConverter() : base("Скопировать файлы", "Отменить копирование") { }
+    }
 }

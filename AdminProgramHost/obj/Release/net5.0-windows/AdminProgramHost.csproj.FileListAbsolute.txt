@@ -30,4 +30,3 @@ E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\obj\Release\net5.
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\obj\Release\net5.0-windows\ref\AdminProgramHost.dll
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\obj\Release\net5.0-windows\AdminProgramHost.pdb
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\obj\Release\net5.0-windows\AdminProgramHost.genruntimeconfig.cache
-E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\obj\Release\net5.0-windows\AdminProgramHost.csproj.CopyComplete

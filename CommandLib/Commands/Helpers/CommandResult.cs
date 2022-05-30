@@ -29,6 +29,6 @@ namespace CommandLib.Commands.Helpers
         public byte[] ToBytes() => JsonSerializer.SerializeToUtf8Bytes(this, ConstHelper.Options);
 
         public static CommandResult FromBytes(byte[] data) 
-            => JsonSerializer.Deserialize<CommandResult>(data, ConstHelper.Options);
+            => (CommandResult)JsonSerializer.Deserialize(data, typeof(CommandResult), ConstHelper.Options);
     }
 }

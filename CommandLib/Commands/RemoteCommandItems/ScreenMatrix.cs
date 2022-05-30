@@ -10,9 +10,11 @@ namespace CommandLib.Commands.RemoteCommandItems
     /// </summary>
     public class ScreenMatrix
     {
-        private readonly ScreenPixel[,] _pixels;
+        private ScreenPixel[,] _pixels;
         private int Height => _pixels.GetLength(0);
         private int Width => _pixels.GetLength(1);
+
+        public ScreenMatrix() { }
 
         public ScreenMatrix(int height, int width) => _pixels = new ScreenPixel[height, width];
         
@@ -37,6 +39,8 @@ namespace CommandLib.Commands.RemoteCommandItems
         /// <param name="screen"></param>
         public void UpdateScreen(Bitmap screen)
         {
+            _pixels ??= new ScreenPixel[screen.Height, screen.Width];
+            
             if (_pixels[1, 0].Y == 0)
             {
                 SetupAllPixels(screen);

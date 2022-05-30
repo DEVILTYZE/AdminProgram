@@ -6,7 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
-using System.Threading;
+using System.Threading.Tasks;
 using AdminProgram.Annotations;
 using AdminProgram.Models;
 using CommandLib;
@@ -24,9 +24,8 @@ namespace AdminProgram.ViewModels
         private int _height, _width;
         private readonly RemoteControl _currentControlState;
         private readonly IPEndPoint _ourIpEndPoint;
-        private readonly RSAParameters _privateKey, _publicKey;
+        private RSAParameters[] _keys;
         private ScreenMatrix _screen;
-        private Thread _remoteConnectionThread;
 
         public Host Host
         {
@@ -98,27 +97,55 @@ namespace AdminProgram.ViewModels
         {
             CurrentControlState = new RemoteControl();
             _height = _width = 500; // Просто 500.
-            RsaEngine.GenerateKeys(out _privateKey, out _publicKey);
         }
 
         public void StartRemoteConnection()
         {
             IsAliveRemoteConnection = true;
-            _remoteConnectionThread = new Thread(Stream);
-            _remoteConnectionThread.Start();
+            Task.Run(Stream);
         }
 
-        public void CloseRemoteConnection()
+        public bool CloseRemoteConnection()
         {
             IsAliveRemoteConnection = false;
-            var client = new UdpClient();
             var endPoint = new IPEndPoint(IPAddress.Parse(Host.IpAddress), NetHelper.RemoteCommandPort);
-            var publicKey = NetHelper.GetPublicKeyOrDefault(client, endPoint, NetHelper.Timeout);
-            var keys = RsaEngine.GetKeys();
-            var command = new RemoteCommand(null, keys[1]) { Type = CommandType.Abort };
-            var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), typeof(RemoteCommand), publicKey);
-            var bytes = datagram.ToBytes();
-            client.Send(bytes, bytes.Length, endPoint);
+            var publicKey = NetHelper.GetPublicKeyOrDefault(endPoint, NetHelper.Timeout);
+            TcpClient client = null;
+
+            try
+            {
+                client = new TcpClient(endPoint);
+                var keys = RsaEngine.GetKeys();
+                var command = new RemoteCommand(null, keys[1]) { Type = CommandType.Abort };
+                var datagram = new Datagram(command.ToBytes(), typeof(RemoteCommand), publicKey);
+                var bytes = datagram.ToBytes();
+
+                using (var stream = client.GetStream())
+                {
+                    stream.Write(bytes, 0, bytes.Length);
+
+                    do
+                    {
+                        bytes = new byte[NetHelper.BufferSize];
+                        stream.Read(bytes, 0, bytes.Length);
+                    } 
+                    while (stream.DataAvailable);
+                }
+                
+                datagram = Datagram.FromBytes(bytes);
+                var result = CommandResult.FromBytes(datagram.GetData(keys[0]));
+
+                return result.Status == CommandResultStatus.Successed;
+            }
+            catch (SocketException)
+            {
+            }
+            finally
+            {
+                client?.Close();
+            }
+
+            return false;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -132,7 +159,8 @@ namespace AdminProgram.ViewModels
         private void Stream()
         {
             var remoteIp = new IPEndPoint(IPAddress.Parse(Host.IpAddress), NetHelper.RemoteCommandPort);
-            var client = new UdpClient(remoteIp.Port);
+            TcpClient tcpClient = null;
+            UdpClient udpClient = null;
 
             try
             {
@@ -140,39 +168,60 @@ namespace AdminProgram.ViewModels
 
                 do
                 {
-                    publicKey = NetHelper.GetPublicKeyOrDefault(client, remoteIp, NetHelper.Timeout);
+                    publicKey = NetHelper.GetPublicKeyOrDefault(remoteIp, NetHelper.Timeout);
 
                     if (!IsAliveRemoteConnection)
                         return;
                 } 
                 while (!publicKey.HasValue);
+                
+                tcpClient = new TcpClient(remoteIp);
+                _keys = RsaEngine.GetKeys();
+                var remoteObject = new RemoteObject(_ourIpEndPoint.Address.ToString(), NetHelper.RemoteStreamPort);
+                var command = new RemoteCommand(remoteObject.ToBytes(), _keys[1]);
+                var datagram = new Datagram(command.ToBytes(), typeof(RemoteCommand), publicKey.Value);
+                var bytes = datagram.ToBytes();
 
-                var remoteObject = new RemoteObject(_ourIpEndPoint.Address.ToString(), _ourIpEndPoint.Port);
-                var command = new RemoteCommand(remoteObject.ToBytes(), _publicKey);
-                var datagram = new Datagram(command.ToBytes(), AesEngine.GetKey(), typeof(RemoteCommand),
-                    publicKey.Value);
-                var datagramBytes = datagram.ToBytes();
-                client.Send(datagramBytes, datagramBytes.Length, remoteIp);
+                using (var stream = tcpClient.GetStream())
+                {
+                    stream.Write(bytes, 0, bytes.Length);
 
-                var thread = new Thread(Control);
-                thread.Start(publicKey);
-
-                client = new UdpClient(NetHelper.RemoteStreamPort);
+                    do
+                    {
+                        bytes = new byte[NetHelper.BufferSize];
+                        stream.Read(bytes, 0, bytes.Length);
+                    } 
+                    while (stream.DataAvailable);
+                }
+                
+                KeySwap(new IPEndPoint(_ourIpEndPoint.Address, NetHelper.RemoteCommandPort));
+                datagram = Datagram.FromBytes(bytes);
+                var result = CommandResult.FromBytes(datagram.GetData(_keys[0]));
+                
+                if (result.Status == CommandResultStatus.Failed)
+                {
+                    IsAliveRemoteConnection = false;
+                    return;
+                }
+                
+                Task.Run(() => Control(publicKey));
+                remoteIp = new IPEndPoint(remoteIp.Address, NetHelper.RemoteStreamPort);
+                udpClient = new UdpClient(remoteIp.Port);
                 
                 while (IsAliveRemoteConnection)
                 {
-                    var data = client.Receive(ref remoteIp);
+                    var data = udpClient.Receive(ref remoteIp);
                     var countOfBlocks = data[0];
-                    var height = BitConverter.ToInt32(data.AsSpan()[^1..5]);
-                    var width = BitConverter.ToInt32(data.AsSpan()[^5..9]);
-                    data = data[^9..]; // 1 — количество блоков, 4 — длина, 4 — ширина.
+                    data = data[^1..]; // 1 — количество блоков, 4 — длина, 4 — ширина.
 
                     for (var i = 0; i < countOfBlocks - 1; ++i)
-                        data = data.Concat(client.Receive(ref remoteIp)).ToArray();
+                        data = data.Concat(udpClient.Receive(ref remoteIp)).ToArray();
 
                     datagram = Datagram.FromBytes(data);
-                    data = datagram.GetData(_privateKey);
-                    var pixels = ScreenMatrix.GetPixelsFromBytesOrDefault(data);
+                    data = datagram.GetData(_keys[0]);
+                    var height = BitConverter.ToInt32(data.AsSpan()[..4]);
+                    var width = BitConverter.ToInt32(data.AsSpan()[^4..8]);
+                    var pixels = ScreenMatrix.GetPixelsFromBytesOrDefault(data[^8..]);
 
                     _screen ??= new ScreenMatrix(height, width);
                     _screen.UpdateScreen(pixels, ImageScreen);
@@ -183,7 +232,8 @@ namespace AdminProgram.ViewModels
             }
             finally
             {
-                client.Close();
+                tcpClient?.Close();
+                udpClient?.Close();
             }
         }
 
@@ -191,14 +241,15 @@ namespace AdminProgram.ViewModels
         {
             var publicKey = (RSAParameters)obj;
             var remoteIp = new IPEndPoint(IPAddress.Parse(Host.IpAddress), NetHelper.RemoteControlPort);
-            var client = new UdpClient(remoteIp);
+            var client = new UdpClient();
+            client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            client.Client.Bind(remoteIp);
 
             try
             {
                 while (IsAliveRemoteConnection)
                 {
-                    var data = CurrentControlState.ToBytes();
-                    var datagram = new Datagram(data, AesEngine.GetKey(), typeof(RemoteControl), publicKey);
+                    var datagram = new Datagram(CurrentControlState.ToBytes(), typeof(RemoteControl), publicKey);
                     var bytes = datagram.ToBytes();
                     client.Send(bytes, bytes.Length, remoteIp);
                     CurrentControlState.ToStartState();
@@ -210,6 +261,54 @@ namespace AdminProgram.ViewModels
             finally
             {
                 client.Close();
+            }
+        }
+
+        private void KeySwap(IPEndPoint endPoint)
+        {
+            TcpListener server = null;
+            TcpClient client = null;
+            _keys = RsaEngine.GetKeys();
+
+            try
+            {
+                server = new TcpListener(endPoint);
+                client = new TcpClient(endPoint);
+                byte[] bytes;
+                
+                
+                using (var stream = client.GetStream())
+                {
+                    do
+                    {
+                        bytes = new byte[NetHelper.BufferSize];
+                        stream.Read(bytes, 0, bytes.Length);
+                    } 
+                    while (stream.DataAvailable);
+                }
+                
+                var datagram = Datagram.FromBytes(bytes);
+                var result = CommandResult.FromBytes(datagram.GetData());
+                var publicKey = result.PublicKey.GetKey();
+
+                result = new CommandResult(CommandResultStatus.Successed, null) { PublicKey = new RsaKey(_keys[1]) };
+                datagram = new Datagram(result.ToBytes(), typeof(CommandResult), publicKey);
+                bytes = datagram.ToBytes();
+
+                using (var stream = client.GetStream())
+                {
+                    stream.Write(bytes, 0, bytes.Length);
+                }
+                
+                _keys[1] = publicKey;
+            }
+            catch (SocketException)
+            {
+            }
+            finally
+            {
+                client?.Close();
+                server?.Stop();
             }
         }
     }

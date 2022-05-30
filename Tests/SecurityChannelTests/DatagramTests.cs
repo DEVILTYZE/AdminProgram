@@ -11,7 +11,6 @@ namespace Tests.SecurityChannelTests
     public class DatagramTests
     {
         private const string Data = "SECRET_DATA";
-        private byte[] _aesKey;
         private RSAParameters[] _rsaKeys;
         private Datagram _datagram;
         private string _jsonDatagram;
@@ -19,15 +18,14 @@ namespace Tests.SecurityChannelTests
         [SetUp]
         public void Setup()
         {
-            _aesKey = AesEngine.GetKey();
             _rsaKeys = RsaEngine.GetKeys();
-            _datagram = new Datagram(Encoding.Unicode.GetBytes(Data), _aesKey, Data.GetType(), _rsaKeys[1]);
+            _datagram = new Datagram(Encoding.UTF8.GetBytes(Data), Data.GetType(), _rsaKeys[1]);
             _jsonDatagram = JsonSerializer.Serialize(_datagram);
         }
 
         [Test]
         public void CreateDatagram()
-            => Assert.AreEqual(Data, Encoding.Unicode.GetString(_datagram.GetData(_rsaKeys[0])));
+            => Assert.AreEqual(Data, Encoding.UTF8.GetString(_datagram.GetData(_rsaKeys[0])));
         
         [Test]
         public void ByteArrayDatagram()
@@ -41,14 +39,14 @@ namespace Tests.SecurityChannelTests
         [Test]
         public void ByteArrayDatagramNull()
         {
-            var command = new MessageCommand(Encoding.Unicode.GetBytes(Data));
-            var datagram = new Datagram(command.ToBytes(), null, typeof(MessageCommand));
+            var command = new MessageCommand(Encoding.UTF8.GetBytes(Data));
+            var datagram = new Datagram(command.ToBytes(), typeof(MessageCommand));
             var bytes = datagram.ToBytes();
             datagram = Datagram.FromBytes(bytes);
             var newCommand = AbstractCommand.FromBytes(datagram.GetData(), datagram.Type);
             var result = newCommand.Execute();
 
-            Assert.AreEqual(Data, Encoding.Unicode.GetString(result.Data));
+            Assert.AreEqual(Data, Encoding.UTF8.GetString(result.Data));
         }
     }
 }

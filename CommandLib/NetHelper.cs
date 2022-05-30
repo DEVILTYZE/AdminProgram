@@ -25,15 +25,17 @@ namespace CommandLib
     {
         private static readonly string RequestPath = Environment.CurrentDirectory + "\\request.apd";
         private static readonly string LocationPath = Environment.CurrentDirectory + "\\location.apd";
+        private static readonly string[] LocalNetworks = { "192", "172", "10" };
 
-        public const int CommandPort = 51000;
-        public const int RemoteStreamPort = 52000;
-        public const int RemoteControlPort = 52001;
-        public const int RemoteCommandPort = 51999;
-        public const int TransferPort = 49500;
-        public const int TransferCommandPort = 49501;
-        public const int Timeout = 2500;
-        public const int LoadTimeout = 20000;
+        public const int BufferSize = 256;
+        public const int CommandPort = 51000; // TCP
+        public const int RemoteStreamPort = 52000; // UDP
+        public const int RemoteControlPort = 52010; // UDP
+        public const int RemoteCommandPort = 52020; // TCP
+        public const int TransferPort = 49500; // TCP
+        public const int TransferCommandPort = 49510; // TCP
+        public const int Timeout = 1500;
+        public const int LoadTimeout = 17000;
         public const int MaxFileLength = 157286400;
 
         public static byte[] GetMagicPacket(string mac)
@@ -48,7 +50,7 @@ namespace CommandLib
         public static HostStatus Ping(string ipAddress)
         {
             var pingSender = new Ping();
-            var buffer = Encoding.Unicode.GetBytes("abcdabcdabcdabcdabcdabcdabcdabcd");
+            var buffer = Encoding.UTF8.GetBytes("abcdabcdabcdabcdabcdabcdabcdabcd");
             var reply = pingSender.Send(ipAddress, 120, buffer, new PingOptions { DontFragment = true });
 
             if (reply is null)
@@ -77,26 +79,37 @@ namespace CommandLib
             throw new Exception("Мак адрес не существует");
         }
         
-        public static RSAParameters? GetPublicKeyOrDefault(UdpClient client, IPEndPoint remoteIp, int receiveTimeout)
+        public static RSAParameters? GetPublicKeyOrDefault(IPEndPoint remoteIp, int receiveTimeout)
         {
-            client.Client.ReceiveTimeout = receiveTimeout;
             var command = new MessageCommand(Array.Empty<byte>());
-            var datagram = new Datagram(command.ToBytes(), null, typeof(MessageCommand));
+            var datagram = new Datagram(command.ToBytes(), typeof(MessageCommand));
             var datagramBytes = datagram.ToBytes();
-            byte[] data;
-
-            client.Send(datagramBytes, datagramBytes.Length, remoteIp);
+            TcpClient client = null;
 
             try
             {
-                data = client.Receive(ref remoteIp);
+                client = new TcpClient(remoteIp) { ReceiveTimeout = receiveTimeout };
+
+                using var stream = client.GetStream();
+                stream.Write(datagramBytes, 0, datagramBytes.Length);
+
+                do
+                {
+                    datagramBytes = new byte[BufferSize];
+                    stream.Read(datagramBytes, 0, datagramBytes.Length);
+                } 
+                while (stream.DataAvailable);
             }
             catch (SocketException)
             {
                 return null;
             }
+            finally
+            {
+                client?.Close();
+            }
 
-            var receivedDatagram = Datagram.FromBytes(data);
+            var receivedDatagram = Datagram.FromBytes(datagramBytes);
             var result = CommandResult.FromBytes(receivedDatagram.GetData());
 
             if (result.Status == CommandResultStatus.Failed)
@@ -105,13 +118,8 @@ namespace CommandLib
             return result.PublicKey.GetKey();
         }
 
-        public static bool PortIsEnabled(string ipAddress, int port)
-        {
-            var ip = IPAddress.Parse(ipAddress);
-            var key = GetPublicKeyOrDefault(new UdpClient(), new IPEndPoint(ip, port), Timeout);
-
-            return key is not null;
-        }
+        public static bool IsInLocalNetwork(IPAddress ipAddress) =>
+            LocalNetworks.Any(localNetwork => ipAddress.ToString().StartsWith(localNetwork));
 
         public static bool SetPort(int port, int otherPort, string protocol, string ipAddress, int enabled, 
             string infoString, int leaseInfo)

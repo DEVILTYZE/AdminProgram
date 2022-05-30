@@ -7,7 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
+using System.Threading.Tasks;
 using CommandLib;
 using CommandLib.Commands;
 using CommandLib.Commands.Helpers;
@@ -33,45 +33,42 @@ namespace AdminProgramHost
                 IpAddress = endPoint.Address.ToString();
 
             MacAddress = NetHelper.GetMacAddress();
-            RsaEngine.GenerateKeys(out _privateKey, out _publicKey);
-            SetPorts(IpAddress);
         }
 
-        public bool StartClientSession()
+        public void StartClientSession()
         {
             if (File.Exists(MacDatPath))
             {
                 using var sr = new StreamReader(MacDatPath);
-                _mainMacAddress = sr.ReadToEnd();
+                _adminMacAddress = sr.ReadToEnd();
             }
-            else return false;
+            else return;
             
+            AreRunningTasks = true;
             _forceClose = false;
             _restart = false;
             Logs += "Старт сессии...\r\n";
-            
-            if (_threadReceiveDataList is not null && _threadReceiveDataList.Count > 0)
-                WaitThreads();
 
-            var threadCommand = new Thread(OpenClient);
-            var threadTransfer = new Thread(OpenClient);
-            var threadRemote = new Thread(OpenClient);
-            threadCommand.Start(NetHelper.CommandPort);
-            threadTransfer.Start(NetHelper.TransferCommandPort);
-            threadRemote.Start(NetHelper.RemoteCommandPort);
-            _threadReceiveDataList = new List<Thread>(new[] { threadCommand, threadTransfer, threadRemote });
-            _clients = new List<UdpClient>();
-            
-            return true;
+            _servers = new List<TcpListener>();
+            Task.Run(() => OpenClient(NetHelper.CommandPort));
+            Task.Run(() => OpenClient(NetHelper.TransferCommandPort));
+            Task.Run(() => OpenClient(NetHelper.RemoteCommandPort));
         }
 
-        public void WaitThreads()
+        public void WaitTasks()
         {
+            if (_forceClose)
+                return;
+            
             Logs += "Закрытие клиента\r\n";
             _forceClose = true;
             
-            foreach(var client in _clients)
-                client.Close();
+            if (_servers is not null)
+                foreach(var server in _servers)
+                    server.Stop();
+
+            foreach (var command in _savedCommands)
+                command.Abort();
 
             if (!_restart)
             {
@@ -136,27 +133,39 @@ namespace AdminProgramHost
         private void OpenClient(object obj)
         {
             var port = (int)obj;
-            var endPoint = GetEndPoint(port);
-            var client = new UdpClient(port);
+            var endPoint = new IPEndPoint(IPAddress.Parse(IpAddress), port);
+            TcpListener server = null;
+            RsaEngine.GenerateKeys(out var privateKey, out var publicKey);
             
-            lock (_locker)
-                _clients.Add(client);
-
             try
             {
+                server = new TcpListener(endPoint);
+                
+                lock (_locker)
+                    _servers.Add(server);
+                
+                server.Start();
+                
                 while (!_forceClose)
                 {
+                    var client = server.AcceptTcpClient();
+                    
                     lock(_locker)
                         Logs += "Открытие клиента\r\n";
                     
                     // Шаг 1: принимаем данные.
-                    var data = client.Receive(ref endPoint);
+                    var data = new byte[NetHelper.BufferSize];
+                    using (var stream = client.GetStream())
+                    {
+                        do stream.Read(data, 0, data.Length);
+                        while (stream.DataAvailable);
+                    }
 
                     // Шаг 2: декодируем данные в датаграмму.
                     var datagram = Datagram.FromBytes(data);
 
                     // Шаг 3: получаем из датаграммы команду.
-                    var command = AbstractCommand.FromBytes(datagram.GetData(_privateKey), datagram.Type);
+                    var command = AbstractCommand.FromBytes(datagram.GetData(privateKey), datagram.Type);
                     
                     lock(_locker)
                         Logs += "Получена команда: " + datagram.Type.FullName + "\r\n";
@@ -168,19 +177,21 @@ namespace AdminProgramHost
                         Logs += "Результат: " + result.Status + "\r\n";
 
                     // Шаг 5: обновляем ключи.
-                    RsaEngine.GenerateKeys(out _privateKey, out _publicKey);
+                    RsaEngine.GenerateKeys(out privateKey, out publicKey);
 
                     // Шаг 6: добавляем новый публичный ключ к результату.
-                    result.PublicKey = new RsaKey(_publicKey);
+                    result.PublicKey = new RsaKey(publicKey);
 
                     // Шаг 7: формируем новую датаграмму из результата.
                     var resultBytes = result.ToBytes();
-                    var resultDatagram = new Datagram(resultBytes, AesEngine.GetKey(), typeof(CommandResult),
-                        command.RsaPublicKey);
+                    var resultDatagram = new Datagram(resultBytes, typeof(CommandResult), command.RsaPublicKey);
                     var resultDatagramBytes = resultDatagram.ToBytes();
 
                     // Шаг 8: отправляем новую датаграмму.
-                    client.Send(resultDatagramBytes, resultDatagramBytes.Length, endPoint);
+                    using (var stream = client.GetStream())
+                    {
+                        stream.Write(resultDatagramBytes, 0, resultDatagramBytes.Length);
+                    }
                     
                     lock(_locker)
                         Logs += "Отправка результата\r\n";
@@ -194,24 +205,10 @@ namespace AdminProgramHost
                     _restart &= !_forceClose;
                 }
             }
-            catch (ThreadInterruptedException)
-            {
-                lock(_locker)
-                {
-                    Logs += "Thread exception";
-                    _restart &= !_forceClose;
-                }
-            }
             catch (Exception)
             {
                 lock(_locker)
                     Logs += "Простой exception\r\n";
-                
-                var result = new CommandResult(CommandResultStatus.Failed, Array.Empty<byte>());
-                var datagram = new Datagram(result.ToBytes(), null, typeof(CommandResult));
-                var datagramBytes = datagram.ToBytes();
-
-                client.Send(datagramBytes, datagramBytes.Length, endPoint);
             }
             finally
             {
@@ -219,8 +216,10 @@ namespace AdminProgramHost
                     Logs += "Закрытие клиента (Finally блок)\r\n";
                 
                 if (!_forceClose)
-                    client.Close();
+                    server?.Stop();
             }
+
+            AreRunningTasks = false;
         }
 
         private CommandResult CommandProcessing(ICommand command)
@@ -251,8 +250,10 @@ namespace AdminProgramHost
 
         private IPEndPoint GetEndPoint(int port)
         {
-            Logs += "Получение конечной точки\r\n";
-            var arpProcess = Process.Start(new ProcessStartInfo("arp", $"-a") // | find \"{_mainMacAddress}\"
+            lock (_locker)
+                Logs += "Получение конечной точки\r\n";
+            
+            var arpProcess = Process.Start(new ProcessStartInfo("arp", "-a")
             {
                 StandardOutputEncoding = Encoding.UTF8,
                 UseShellExecute = false,
@@ -265,44 +266,27 @@ namespace AdminProgramHost
             if (string.IsNullOrEmpty(cmdOutput))
                 return new IPEndPoint(IPAddress.Any, port);
             
-            const string pattern = @"(\d{0,3}\.){3}\d{0,3}";
+            var pattern = @"(\d{0,3}\.){3}\d{0,3}\.+" + _adminMacAddress;
             Match match;
             
             do match = Regex.Match(cmdOutput, pattern, RegexOptions.IgnoreCase);
             while (match.Value.EndsWith("255"));
-            
-            Logs += "Конечная точка — " + match.Value + ":" + port + "\r\n";
-            return new IPEndPoint(IPAddress.Parse(match.Value), port);
-        }
 
-        private static void SetPorts(string ipAddress)
-        {
-            const string udpString = "UDP";
-            const string tcpString = "TCP";
-            const int countOfRepeat = 5;
-            var ports = new[]
-            {
-                NetHelper.CommandPort, NetHelper.RemoteStreamPort, NetHelper.RemoteControlPort, NetHelper.RemoteCommandPort, 
-                NetHelper.TransferPort, NetHelper.TransferPort, NetHelper.TransferCommandPort
-            };
-            var protocols = new[] { udpString, udpString, udpString, udpString, udpString, tcpString, udpString };
+            var ip = string.IsNullOrEmpty(match.Value) ? IpAddress : match.Value;
+
+            lock (_locker)
+                Logs += "Конечная точка — " + ip + ":" + port + "\r\n";
             
-            for (var i = 0; i < ports.Length; ++i)
-            for (var j = 0; j < countOfRepeat; ++j)
-                if (NetHelper.SetPort(
-                        ports[i],
-                        ports[i],
-                        protocols[i],
-                        ipAddress,
-                        1,
-                        "AdminProgramHost",
-                        0
-                    ))
-                    break;
+            return new IPEndPoint(IPAddress.Parse(ip), port);
         }
 
         private static void ExportLogs(string logs)
         {
+            var dirName = new FileInfo(LogsPath).DirectoryName ?? Environment.CurrentDirectory + "\\logs";
+
+            if (!Directory.Exists(dirName))
+                Directory.CreateDirectory(dirName);
+            
             using var sw = new StreamWriter(LogsPath);
             sw.Write(logs);
         }

@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -18,7 +18,7 @@ namespace AdminProgram.Views
         private readonly Style _searchNotEmpty = new()
             { Setters = { new Setter { Property = ContentProperty, Value = string.Empty } } };
 
-        private Thread _thread;
+        private Task _task;
         
         public delegate void ChangeStatusDelegate(bool isEnabled);
         public event ChangeStatusDelegate ChangeRemoteStatus;
@@ -63,8 +63,6 @@ namespace AdminProgram.Views
 
         private static void Scan(HostViewModel hostViewModel)
         {
-            hostViewModel.ScanThreads.IsAlive = true;
-            
             if (!hostViewModel.Scan())
                 MessageBox.Show("Scan error", "Error");
         }
@@ -75,10 +73,8 @@ namespace AdminProgram.Views
         private void RefreshAllButton_OnClick(object sender, RoutedEventArgs e) => _model.Refresh();
         
         private void RefreshButton_OnClick(object sender, RoutedEventArgs e)
-        {
-            _thread = new Thread(HostViewModel.Refresh);
-            _thread.Start(_model.SelectedHost);
-        }
+            => _task = Task.Run(() => HostViewModel.Refresh(_model.SelectedHost));
+        
 
         private void MainWindow_OnKeyDown(object sender, KeyEventArgs e)
         {
@@ -96,10 +92,10 @@ namespace AdminProgram.Views
 
         private void MainWindow_OnClosed(object sender, EventArgs e)
         {
-            if (_thread is not null && _thread.IsAlive)
-                _thread.Join();
+            if (_task is not null && !_task.IsCompleted)
+                _task.Wait();
             
-            _model.WaitAllThreads();
+            _model.WaitTasks();
         }
 
         private void RemoteButton_OnClick(object sender, RoutedEventArgs e)
@@ -127,7 +123,6 @@ namespace AdminProgram.Views
                     _model.CloseTransfer();
                     break;
             }
-
         }
     }
 }

@@ -2,18 +2,18 @@
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading;
+using System.Threading.Tasks;
 using AdminProgram.Annotations;
 
 namespace AdminProgram.Models
 {
-    public sealed class ThreadList : INotifyPropertyChanged
+    public sealed class TaskList : INotifyPropertyChanged
     {
-        private readonly List<Thread> _list;
+        private readonly List<Task> _list;
 
         private bool _isAlive;
 
-        public int Count => _list.Count(thread => !thread.IsAlive);
+        public int Count => _list.Count(task => task.Status == TaskStatus.Running);
         
         public bool IsAlive
         {
@@ -25,25 +25,29 @@ namespace AdminProgram.Models
             }
         }
 
-        public ThreadList() => _list = new List<Thread>();
+        public TaskList() => _list = new List<Task>();
 
-        public void Add(Thread thread)
+        public void Add(Task task)
         {
+            var index = _list.FindIndex(thisTask => thisTask.IsCompleted);
             IsAlive = true;
-            RemoveUselessThreads();
-            _list.Add(thread);
+
+            if (index != -1)
+                _list[index] = task;
+            else
+                _list.Add(task);
         }
 
-        public void WaitThreads()
+        public void Wait() => Task.Run(WaitTasks);
+
+        private void WaitTasks()
         {
-            foreach (var thread in _list)
-                thread.Join();
+            foreach (var task in _list)
+                task.Wait();
 
             _list.Clear();
             IsAlive = false;
         }
-
-        private void RemoveUselessThreads() => _list.RemoveAll(thread => !thread.IsAlive);
 
         public event PropertyChangedEventHandler PropertyChanged;
 

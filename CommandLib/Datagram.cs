@@ -29,10 +29,11 @@ namespace CommandLib
             TypeName = typeName;
         }
 
-        public Datagram(byte[] data, byte[] aesKey, Type type, RSAParameters? rsaPublicKey = null)
+        public Datagram(byte[] data, Type type, RSAParameters? rsaPublicKey = null)
         {
             if (rsaPublicKey.HasValue)
             {
+                var aesKey = AesEngine.GetKey();
                 Data = AesEngine.Encrypt(data, aesKey);
                 AesKey = RsaEngine.Encrypt(aesKey, rsaPublicKey.Value);
             }
@@ -54,6 +55,7 @@ namespace CommandLib
 
         public byte[] ToBytes() => JsonSerializer.SerializeToUtf8Bytes(this, _options);
 
-        public static Datagram FromBytes(byte[] data) => JsonSerializer.Deserialize<Datagram>(data, _options);
+        public static Datagram FromBytes(byte[] data) 
+            => (Datagram)JsonSerializer.Deserialize(data, typeof(Datagram), _options);
     }
 }

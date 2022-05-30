@@ -6,11 +6,10 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading;
+using System.Threading.Tasks;
 using CommandLib.Annotations;
 using CommandLib.Commands.Helpers;
 using CommandLib.Commands.RemoteCommandItems;
-using SecurityChannel;
 
 namespace CommandLib.Commands.TransferCommandItems
 {
@@ -33,12 +32,11 @@ namespace CommandLib.Commands.TransferCommandItems
             
             try
             {
-                (endPoint, path) = ((IPEndPoint, string))RemoteObject.FromBytes(Data, 
-                    typeof(TransferObject)).GetData();
+                (endPoint, path) = ((IPEndPoint, string))RemoteObject.FromBytes(Data, typeof(TransferObject)).GetData();
             }
             catch (Exception)
             {
-                return new CommandResult(CommandResultStatus.Failed, Encoding.Unicode.GetBytes(ConstHelper.DataError));
+                return new CommandResult(CommandResultStatus.Failed, Encoding.UTF8.GetBytes(ConstHelper.DataError));
             }
 
             var isDirectory = File.GetAttributes(path).HasFlag(FileAttributes.Directory);
@@ -47,15 +45,13 @@ namespace CommandLib.Commands.TransferCommandItems
                 : new FileInfo(path).Length;
 
             if (length > NetHelper.MaxFileLength)
-                return new CommandResult(CommandResultStatus.Failed, 
-                    Encoding.Unicode.GetBytes(ConstHelper.FileLengthError));
+                return new CommandResult(CommandResultStatus.Failed, Encoding.UTF8.GetBytes(ConstHelper.FileLengthError));
 
             if (!File.Exists(path) || isDirectory && !Directory.Exists(path))
-                return new CommandResult(CommandResultStatus.Failed, Encoding.Unicode.GetBytes(ConstHelper.FileError));
+                return new CommandResult(CommandResultStatus.Failed, Encoding.UTF8.GetBytes(ConstHelper.FileError));
 
-            var thread = new Thread(TransferFiles);
-            thread.Start((endPoint, path, isDirectory));
-
+            Task.Run(() => TransferFiles((endPoint, path, isDirectory)));
+            
             return new CommandResult(CommandResultStatus.Successed, Array.Empty<byte>());
         }
 
@@ -65,19 +61,24 @@ namespace CommandLib.Commands.TransferCommandItems
         {
             if (obj is null || !_isActive)
                 return;
-            
-            var (remoteIp, path, isDirectory) = ((IPEndPoint, string, bool))obj;
-            var client = new TcpClient(remoteIp);
 
+            var (remoteIp, path, isDirectory) = ((IPEndPoint, string, bool))obj;
+            TcpClient client = null;
+            
             try
             {
+                client = new TcpClient(remoteIp);
                 client.Connect(remoteIp);
+
                 var paths = isDirectory
                     ? Directory.GetFiles(path, "*", SearchOption.AllDirectories)
                     : new[] { path };
 
                 if (paths.Length >= byte.MaxValue)
+                {
+                    client.Close();
                     return;
+                }
 
                 using (var stream = client.GetStream())
                 {
@@ -97,7 +98,7 @@ namespace CommandLib.Commands.TransferCommandItems
 
                     var fileNameByteArray = FileNameToByteArray(filePath);
                     var fileBytes = fileNameByteArray.Concat(fileData).ToArray();
-                    var datagram = new Datagram(fileBytes, AesEngine.GetKey(), typeof(byte[]), RsaPublicKey);
+                    var datagram = new Datagram(fileBytes, typeof(byte[]), RsaPublicKey);
                     var bytes = datagram.ToBytes();
                     bytes = BitConverter.GetBytes(bytes.Length).Concat(bytes).ToArray();
 
@@ -107,17 +108,24 @@ namespace CommandLib.Commands.TransferCommandItems
                     }
                 }
             }
-            catch (SocketException) { }
+            catch (SocketException)
+            {
+                // ignored
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
             finally
             {
-                client.Close();
+                client?.Close();
             }
         }
 
         private static byte[] FileNameToByteArray(string filePath)
         {
             var fileName = filePath[filePath.LastIndexOf('\\')..];
-            var bytes = Encoding.Unicode.GetBytes(fileName);
+            var bytes = Encoding.UTF8.GetBytes(fileName);
 
             return BitConverter.GetBytes(bytes.Length).Concat(bytes).ToArray();
         }

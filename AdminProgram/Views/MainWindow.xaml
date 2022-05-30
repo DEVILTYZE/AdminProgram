@@ -32,17 +32,17 @@
         </Grid.ColumnDefinitions>
         <Button x:Name="ScanButton"
                 Style="{StaticResource {x:Type Button}}"
-                Content="{Binding ScanThreads.IsAlive, 
+                Content="{Binding ScanTasks.IsAlive, 
                 Converter={StaticResource ScanButtonText}}"
-                IsEnabled="{Binding ScanThreads.IsAlive, 
+                IsEnabled="{Binding ScanTasks.IsAlive, 
                 Converter={StaticResource OppositeBool}}"
                 Click="ScanButton_OnClick"/>
         <Button Grid.Row="0" Grid.Column="1" 
                 x:Name="RefreshAllButton"
                 Style="{StaticResource {x:Type Button}}"
-                Content="{Binding RefreshThreads.IsAlive, 
+                Content="{Binding RefreshTasks.IsAlive, 
                 Converter={StaticResource RefreshButtonText}}"
-                IsEnabled="{Binding RefreshThreads.IsAlive, 
+                IsEnabled="{Binding RefreshTasks.IsAlive, 
                 Converter={StaticResource OppositeBool}}"
                 Click="RefreshAllButton_OnClick"/>
         <TextBox Grid.Row="0" Grid.Column="2" 
@@ -100,19 +100,18 @@
             <StackPanel IsEnabled="{Binding SelectedHost.Status, 
                         Converter={StaticResource StatusBool}}">
                 <Button Style="{StaticResource {x:Type Button}}"
-                    Content="Обновить статус"
-                    Click="RefreshButton_OnClick"/>
+                        Content="Обновить статус"
+                        Click="RefreshButton_OnClick"/>
                 <!-- IsEnabled="{Binding SelectedHost.Status,  -->
                 <!-- Converter={StaticResource StatusBool}}" -->
                 <Button x:Name="RemoteButton"
-                    Style="{StaticResource {x:Type Button}}" 
-                    Content="Удалённое управление"
-                    Click="RemoteButton_OnClick"/>
+                        Style="{StaticResource {x:Type Button}}" 
+                        Content="Удалённое управление"
+                        Click="RemoteButton_OnClick"/>
                 <TextBox Text="{Binding TransferMessage}"/>
-                <Button IsEnabled="{Binding SelectedHost.IsTransfers, 
-                    Converter={StaticResource OppositeBool}}"
-                    Content="Скопировать файлы"
-                    Click="TransferButton_OnClick"/>
+                <Button Content="{Binding SelectedHost.IsTransfers, 
+                        Converter={StaticResource TransferButtonText}}"
+                        Click="TransferButton_OnClick"/>
             </StackPanel>
         </StackPanel>
     </Grid>

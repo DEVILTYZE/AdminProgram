@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using AdminProgramHost.Annotations;
+using CommandLib;
 
 namespace AdminProgramHost
 {
@@ -26,17 +29,22 @@ namespace AdminProgramHost
                 Close();
         }
 
-        private void MainWindow_OnClosed([CanBeNull]object sender, EventArgs e) => _model.WaitThreads();
+        private void MainWindow_OnClosed([CanBeNull]object sender, EventArgs e) => _model.WaitTasks();
 
         private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
-            if (_model.StartClientSession()) 
-                return;
-            
-            MessageBox.Show("Не существует файла с мак-адресом.");
-            Close();
+            _model.StartClientSession();
+            Task.Run(EndClose);
         }
 
         private void ButtonBase_OnClick(object sender, RoutedEventArgs e) => _model.SetAutorunValue(false);
+
+        private void EndClose()
+        {
+            while (_model.AreRunningTasks)
+                Thread.Sleep(ConstHelper.SleepTimeout / 2);
+
+            Application.Current.Dispatcher.Invoke(Close);
+        }
     }
 }

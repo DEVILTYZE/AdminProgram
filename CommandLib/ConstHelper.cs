@@ -18,6 +18,8 @@ namespace CommandLib
         public const string DataError = "Невозможно получить IPEndPoint или RSAParameters.";
         public const string FileError = "Файла не существует.";
         public const string FileLengthError = "Вес файла больше допустимого (150 МБ).";
+
+        public const int SleepTimeout = 100;
         
         public static readonly JsonSerializerOptions Options = new()
         {

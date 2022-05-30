@@ -7,6 +7,7 @@ using System.Net;
 using System.Runtime.CompilerServices;
 using AdminProgram.Annotations;
 using AdminProgram.Models;
+using CommandLib;
 
 namespace AdminProgram.ViewModels
 {
@@ -14,22 +15,20 @@ namespace AdminProgram.ViewModels
     {
         private readonly object _locker = new();
         private readonly IPHostEntry _currentHost;
-        private readonly string _filesDirectory = Environment.CurrentDirectory + "\\admin_dir_files\\";
-        private readonly string[] _localNetworks = { "192", "172", "10" };
+        private readonly string _filesDirectory = Environment.CurrentDirectory + "\\admin_transferred_files\\";
         
         private Dictionary<string, string> _addresses;
         private Host _selectedHost;
         private string _transferMessage;
         private AdminContext _db;
         private readonly bool _hasDataBase;
-        private readonly ThreadList _transferThreads;
-        
-        private IPAddress CurrentIpAddress => _currentHost.AddressList.First(ip => _localNetworks.Any(localNet
-            => ip.ToString().StartsWith(localNet)));
+        private readonly TaskList _transferTasks;
+
+        private IPAddress CurrentIpAddress => _currentHost.AddressList.First(NetHelper.IsInLocalNetwork);
 
         public ObservableCollection<Host> Hosts { get; set; }
-        public ThreadList ScanThreads { get; }
-        public ThreadList RefreshThreads { get; }
+        public TaskList ScanTasks { get; }
+        public TaskList RefreshTasks { get; }
 
         public Host SelectedHost
         {
