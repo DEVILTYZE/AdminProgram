@@ -114,7 +114,7 @@ namespace AdminProgram.Models
             Status = HostStatus.Unknown;
         }
 
-        public override string ToString() => MacAddress + " " + IpAddress + " " + Name;
+        public override string ToString() => MacAddress + "_" + IpAddress + "_" + Name;
 
         public event PropertyChangedEventHandler PropertyChanged;
         [NotifyPropertyChangedInvocator]

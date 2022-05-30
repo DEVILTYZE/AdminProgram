@@ -44,7 +44,8 @@ namespace AdminProgramHost
             while (_model.AreRunningTasks)
                 Thread.Sleep(ConstHelper.SleepTimeout / 2);
 
-            Application.Current.Dispatcher.Invoke(Close);
+            if (Application.Current is not null)
+                Application.Current.Dispatcher.Invoke(Close);
         }
     }
 }

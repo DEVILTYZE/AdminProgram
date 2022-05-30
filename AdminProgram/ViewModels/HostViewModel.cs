@@ -157,7 +157,7 @@ namespace AdminProgram.ViewModels
             try
             {
                 
-                client = new TcpClient(endPoint) { ReceiveTimeout = NetHelper.Timeout };
+                client = new TcpClient(host.IpAddress, NetHelper.CommandPort) { ReceiveTimeout = NetHelper.Timeout };
                 if (!publicKey.HasValue)
                 {
                     host.Status = HostStatus.On;
@@ -173,12 +173,7 @@ namespace AdminProgram.ViewModels
                 {
                     stream.Write(bytes, 0, bytes.Length);
 
-                    do
-                    {
-                        bytes = new byte[NetHelper.BufferSize];
-                        stream.Read(bytes, 0, bytes.Length);
-                    } 
-                    while (stream.DataAvailable);
+                    bytes = NetHelper.StreamRead(stream);
                 }
 
                 datagram = Datagram.FromBytes(bytes);
@@ -218,7 +213,10 @@ namespace AdminProgram.ViewModels
 
             try
             {
-                client = new TcpClient(endPoint) { ReceiveTimeout = NetHelper.Timeout };
+                client = new TcpClient(host.IpAddress, NetHelper.TransferCommandPort)
+                {
+                    ReceiveTimeout = NetHelper.Timeout
+                };
 
                 if (!publicKey.HasValue)
                     return;
@@ -235,12 +233,7 @@ namespace AdminProgram.ViewModels
                     stream.Write(bytes, 0, bytes.Length);
                     Task.Run(() => Transfer((transferEndPoint, host, keys[0])));
 
-                    do
-                    {
-                        bytes = new byte[NetHelper.BufferSize];
-                        stream.Read(bytes, 0, bytes.Length);
-                    } 
-                    while (stream.DataAvailable);
+                    bytes = NetHelper.StreamRead(stream);
                 }
                 
                 datagram = Datagram.FromBytes(bytes);
@@ -274,11 +267,11 @@ namespace AdminProgram.ViewModels
                 
                 client = host.TransferServer.AcceptTcpClient();
                 client.Client.ReceiveTimeout = NetHelper.Timeout;
-                var countOfFiles = client.GetStream().ReadByte();
+                using var stream = client.GetStream();
+                var countOfFiles = stream.ReadByte();
 
                 for (var i = 0; i < countOfFiles && host.IsTransfers; ++i)
                 {
-                    using var stream = client.GetStream();
                     var data = new byte[4];
                     stream.Read(data, 0, data.Length);
                     var length = BitConverter.ToInt32(data);
@@ -295,8 +288,7 @@ namespace AdminProgram.ViewModels
                     var datagram = Datagram.FromBytes(currentByteList.ToArray());
                     data = datagram.GetData(privateKey);
                     length = BitConverter.ToInt32(new ArraySegment<byte>(data, 0, 4));
-                    data = new ArraySegment<byte>(data, 4, length).ToArray();
-                    namesList.Add(Encoding.UTF8.GetString(data));
+                    namesList.Add(Encoding.UTF8.GetString(new ArraySegment<byte>(data, 4, length)));
                     data = new ArraySegment<byte>(data, length - 1, data.Length - length + 1).ToArray();
                     responseList.Add(data);
                 }
@@ -305,15 +297,17 @@ namespace AdminProgram.ViewModels
             finally
             {
                 client?.Close();
-                
-                if (!host.IsTransfers)
-                    host.TransferServer?.Stop();
+                host.TransferServer?.Stop();
             }
 
             for (var i = 0; i < responseList.Count && host.IsTransfers; ++i)
             {
                 var count = 1;
-                var path = _filesDirectory + host.Name + namesList[i];
+                var path = _filesDirectory + host + namesList[i];
+
+                if (!Directory.Exists(_filesDirectory + host + "\\"))
+                    Directory.CreateDirectory(_filesDirectory + host + "\\");
+                
                 while (File.Exists(path))
                 {
                     if (count == 1)
@@ -338,7 +332,10 @@ namespace AdminProgram.ViewModels
 
             try
             {
-                client = new TcpClient(endPoint) { ReceiveTimeout = NetHelper.Timeout };
+                client = new TcpClient(SelectedHost.IpAddress, NetHelper.TransferCommandPort)
+                {
+                    ReceiveTimeout = NetHelper.Timeout
+                };
                 var keys = RsaEngine.GetKeys();
                 var command = new TransferCommand(null, keys[1]) { Type = CommandType.Abort };
                 var datagram = new Datagram(command.ToBytes(), typeof(TransferCommand), publicKey);
@@ -348,12 +345,7 @@ namespace AdminProgram.ViewModels
                 {
                     stream.Write(bytes, 0, bytes.Length);
 
-                    do
-                    {
-                        bytes = new byte[NetHelper.BufferSize];
-                        stream.Read(bytes, 0, bytes.Length);
-                    } 
-                    while (stream.DataAvailable);
+                    bytes = NetHelper.StreamRead(stream);
                 }
                 
                 datagram = Datagram.FromBytes(bytes);
@@ -498,7 +490,7 @@ namespace AdminProgram.ViewModels
                 return false;
             }
 
-            Hosts = new ObservableCollection<Host>(_db.Hosts.Local.Where(thisHost => thisHost.Id != 1)
+            Hosts = new ObservableCollection<Host>(_db.Hosts.Local.Where(thisHost => thisHost.Id == 1)
                 .Select(thisHost => new Host(thisHost)));
             OnPropertyChanged(nameof(Hosts));
             

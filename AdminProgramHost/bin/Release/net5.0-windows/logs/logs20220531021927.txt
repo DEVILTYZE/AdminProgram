@@ -1,0 +1,115 @@
+Установка стартовой информации
+Установка автозапуска
+Автозапуск установлен успешно
+Старт сессии...
+Открытие клиента
+Получена команда: CommandLib.Commands.MessageCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.MessageCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.TransferCommandItems.TransferCommand
+Результат: Successed
+Отправка результата
+Удаление автозапуска
+Автозапуск удалён успешно
+Открытие клиента
+Получена команда: CommandLib.Commands.MessageCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.MessageCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.MessageCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.TransferCommandItems.TransferCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.MessageCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.MessageCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.TransferCommandItems.TransferCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.MessageCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.MessageCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.TransferCommandItems.TransferCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.MessageCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.MessageCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.TransferCommandItems.TransferCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.MessageCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.MessageCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.TransferCommandItems.TransferCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.MessageCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.MessageCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.TransferCommandItems.TransferCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.MessageCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.MessageCommand
+Результат: Successed
+Отправка результата
+Открытие клиента
+Получена команда: CommandLib.Commands.TransferCommandItems.TransferCommand
+Результат: Successed
+Отправка результата
+Удаление автозапуска
+Автозапуск не удалён
+Закрытие клиента
+Socket exception
+Закрытие клиента (Finally блок)
+Socket exception
+Закрытие клиента (Finally блок)
+Socket exception
+Закрытие клиента (Finally блок)

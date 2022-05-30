@@ -67,8 +67,7 @@ namespace CommandLib.Commands.TransferCommandItems
             
             try
             {
-                client = new TcpClient(remoteIp);
-                client.Connect(remoteIp);
+                client = new TcpClient(remoteIp.Address.ToString(), remoteIp.Port);
 
                 var paths = isDirectory
                     ? Directory.GetFiles(path, "*", SearchOption.AllDirectories)
@@ -80,11 +79,9 @@ namespace CommandLib.Commands.TransferCommandItems
                     return;
                 }
 
-                using (var stream = client.GetStream())
-                {
-                    stream.WriteByte((byte)paths.Length);
-                }
-
+                using var stream = client.GetStream();
+                stream.WriteByte((byte)paths.Length);
+                
                 foreach (var filePath in paths)
                 {
                     if (!_isActive)
@@ -101,11 +98,7 @@ namespace CommandLib.Commands.TransferCommandItems
                     var datagram = new Datagram(fileBytes, typeof(byte[]), RsaPublicKey);
                     var bytes = datagram.ToBytes();
                     bytes = BitConverter.GetBytes(bytes.Length).Concat(bytes).ToArray();
-
-                    using (var stream = client.GetStream())
-                    {
-                        stream.Write(bytes, 0, bytes.Length);
-                    }
+                    stream.Write(bytes, 0, bytes.Length);
                 }
             }
             catch (SocketException)

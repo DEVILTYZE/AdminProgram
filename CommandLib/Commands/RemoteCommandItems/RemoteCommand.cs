@@ -107,18 +107,13 @@ namespace CommandLib.Commands.RemoteCommandItems
             
             try
             {
-                client = new TcpClient(endPoint);
+                client = new TcpClient(endPoint.Address.ToString(), endPoint.Port);
 
                 using (var stream = client.GetStream())
                 {
                     stream.Write(bytes, 0, bytes.Length);
 
-                    do
-                    {
-                        bytes = new byte[NetHelper.BufferSize];
-                        stream.Read(bytes, 0, bytes.Length);
-                    } 
-                    while (stream.DataAvailable);
+                    bytes = NetHelper.StreamRead(stream);
                 }
                 
                 datagram = Datagram.FromBytes(bytes);

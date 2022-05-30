@@ -154,13 +154,9 @@ namespace AdminProgramHost
                         Logs += "Открытие клиента\r\n";
                     
                     // Шаг 1: принимаем данные.
-                    var data = new byte[NetHelper.BufferSize];
-                    using (var stream = client.GetStream())
-                    {
-                        do stream.Read(data, 0, data.Length);
-                        while (stream.DataAvailable);
-                    }
-
+                    using var stream = client.GetStream();
+                    var data = NetHelper.StreamRead(stream);
+                    
                     // Шаг 2: декодируем данные в датаграмму.
                     var datagram = Datagram.FromBytes(data);
 
@@ -188,11 +184,8 @@ namespace AdminProgramHost
                     var resultDatagramBytes = resultDatagram.ToBytes();
 
                     // Шаг 8: отправляем новую датаграмму.
-                    using (var stream = client.GetStream())
-                    {
-                        stream.Write(resultDatagramBytes, 0, resultDatagramBytes.Length);
-                    }
-                    
+                    stream.Write(resultDatagramBytes, 0, resultDatagramBytes.Length);
+
                     lock(_locker)
                         Logs += "Отправка результата\r\n";
                 }

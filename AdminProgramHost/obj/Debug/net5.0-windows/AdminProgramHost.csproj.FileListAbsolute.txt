@@ -26,7 +26,6 @@ E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\obj\Debug\net5.0-
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\obj\Debug\net5.0-windows\AdminProgramHost.AssemblyInfoInputs.cache
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\obj\Debug\net5.0-windows\AdminProgramHost.AssemblyInfo.cs
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\obj\Debug\net5.0-windows\AdminProgramHost.csproj.CoreCompileInputs.cache
-E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\obj\Debug\net5.0-windows\AdminProgramHost.csproj.CopyComplete
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\obj\Debug\net5.0-windows\AdminProgramHost.dll
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\obj\Debug\net5.0-windows\ref\AdminProgramHost.dll
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\obj\Debug\net5.0-windows\AdminProgramHost.pdb

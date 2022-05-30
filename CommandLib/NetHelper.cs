@@ -83,22 +83,20 @@ namespace CommandLib
         {
             var command = new MessageCommand(Array.Empty<byte>());
             var datagram = new Datagram(command.ToBytes(), typeof(MessageCommand));
-            var datagramBytes = datagram.ToBytes();
+            var bytes = datagram.ToBytes();
             TcpClient client = null;
 
             try
             {
-                client = new TcpClient(remoteIp) { ReceiveTimeout = receiveTimeout };
+                client = new TcpClient(remoteIp.Address.ToString(), remoteIp.Port)
+                {
+                    ReceiveTimeout = receiveTimeout
+                };
 
                 using var stream = client.GetStream();
-                stream.Write(datagramBytes, 0, datagramBytes.Length);
+                stream.Write(bytes, 0, bytes.Length);
 
-                do
-                {
-                    datagramBytes = new byte[BufferSize];
-                    stream.Read(datagramBytes, 0, datagramBytes.Length);
-                } 
-                while (stream.DataAvailable);
+                bytes = StreamRead(stream);
             }
             catch (SocketException)
             {
@@ -109,7 +107,7 @@ namespace CommandLib
                 client?.Close();
             }
 
-            var receivedDatagram = Datagram.FromBytes(datagramBytes);
+            var receivedDatagram = Datagram.FromBytes(bytes);
             var result = CommandResult.FromBytes(receivedDatagram.GetData());
 
             if (result.Status == CommandResultStatus.Failed)
@@ -120,6 +118,22 @@ namespace CommandLib
 
         public static bool IsInLocalNetwork(IPAddress ipAddress) =>
             LocalNetworks.Any(localNetwork => ipAddress.ToString().StartsWith(localNetwork));
+
+        public static byte[] StreamRead(NetworkStream stream)
+        {
+            var byteList = new List<byte>();
+                        
+            do
+            {
+                var data = new byte[BufferSize];
+                var length = stream.Read(data, 0, data.Length);
+                Array.Resize(ref data, length);
+                byteList.AddRange(data);
+            }
+            while (stream.DataAvailable);
+
+            return byteList.ToArray();
+        }
 
         public static bool SetPort(int port, int otherPort, string protocol, string ipAddress, int enabled, 
             string infoString, int leaseInfo)

@@ -114,7 +114,7 @@ namespace AdminProgram.ViewModels
 
             try
             {
-                client = new TcpClient(endPoint);
+                client = new TcpClient(Host.IpAddress, NetHelper.RemoteCommandPort);
                 var keys = RsaEngine.GetKeys();
                 var command = new RemoteCommand(null, keys[1]) { Type = CommandType.Abort };
                 var datagram = new Datagram(command.ToBytes(), typeof(RemoteCommand), publicKey);
@@ -124,12 +124,7 @@ namespace AdminProgram.ViewModels
                 {
                     stream.Write(bytes, 0, bytes.Length);
 
-                    do
-                    {
-                        bytes = new byte[NetHelper.BufferSize];
-                        stream.Read(bytes, 0, bytes.Length);
-                    } 
-                    while (stream.DataAvailable);
+                    bytes = NetHelper.StreamRead(stream);
                 }
                 
                 datagram = Datagram.FromBytes(bytes);
@@ -175,7 +170,7 @@ namespace AdminProgram.ViewModels
                 } 
                 while (!publicKey.HasValue);
                 
-                tcpClient = new TcpClient(remoteIp);
+                tcpClient = new TcpClient(Host.IpAddress, NetHelper.RemoteCommandPort);
                 _keys = RsaEngine.GetKeys();
                 var remoteObject = new RemoteObject(_ourIpEndPoint.Address.ToString(), NetHelper.RemoteStreamPort);
                 var command = new RemoteCommand(remoteObject.ToBytes(), _keys[1]);
@@ -186,12 +181,7 @@ namespace AdminProgram.ViewModels
                 {
                     stream.Write(bytes, 0, bytes.Length);
 
-                    do
-                    {
-                        bytes = new byte[NetHelper.BufferSize];
-                        stream.Read(bytes, 0, bytes.Length);
-                    } 
-                    while (stream.DataAvailable);
+                    bytes = NetHelper.StreamRead(stream);
                 }
                 
                 KeySwap(new IPEndPoint(_ourIpEndPoint.Address, NetHelper.RemoteCommandPort));
@@ -273,18 +263,14 @@ namespace AdminProgram.ViewModels
             try
             {
                 server = new TcpListener(endPoint);
-                client = new TcpClient(endPoint);
+                server.Start();
+                client = server.AcceptTcpClient();
                 byte[] bytes;
                 
                 
                 using (var stream = client.GetStream())
                 {
-                    do
-                    {
-                        bytes = new byte[NetHelper.BufferSize];
-                        stream.Read(bytes, 0, bytes.Length);
-                    } 
-                    while (stream.DataAvailable);
+                    bytes = NetHelper.StreamRead(stream);
                 }
                 
                 var datagram = Datagram.FromBytes(bytes);
