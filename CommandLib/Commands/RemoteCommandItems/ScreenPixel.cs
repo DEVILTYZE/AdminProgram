@@ -10,28 +10,23 @@ namespace CommandLib.Commands.RemoteCommandItems
     /// </summary>
     public struct ScreenPixel
     {
-        private const int IntLength = 4;
-        public const int OnePixelLength = 12;
+        private const int ShortLength = 2;
+        public const int OnePixelLength = 7;
 
-        public int X { get; }
-        public int Y { get; }
-        public byte[] Rgba { get; }
-        public bool IsUpdated { get; set; }
+        public short X { get; }
+        public short Y { get; }
+        public byte R { get; set; }
+        public byte G { get; set; }
+        public byte B { get; set; }
 
-        public ScreenPixel(int x, int y)
+
+        public ScreenPixel(short x, short y, byte r, byte g, byte b)
         {
             X = x;
             Y = y;
-            Rgba = new[] { byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue };
-            IsUpdated = false;
-        }
-
-        public ScreenPixel(int x, int y, IReadOnlyList<byte> rgba)
-        {
-            X = x;
-            Y = y;
-            Rgba = new[] { rgba[0], rgba[1], rgba[2], rgba[3] };
-            IsUpdated = false;
+            R = r;
+            G = g;
+            B = b;
         }
 
         /// <summary>
@@ -39,27 +34,25 @@ namespace CommandLib.Commands.RemoteCommandItems
         /// </summary>
         /// <param name="pixel"></param>
         /// <returns></returns>
-        public bool Equals(Color pixel) 
-            => pixel.R != Rgba[0] || pixel.G != Rgba[1] || pixel.B != Rgba[2] || pixel.A != Rgba[3];
+        public bool Equals(Color pixel) => pixel.R != R || pixel.G != G || pixel.B != B;
+        
+        public bool Equals(byte r, byte g, byte b) => r != R || g != G || b != B;
 
         /// <summary>
         /// Устанавливает специальный цвет на пиксель.
         /// </summary>
         public void SetPixel(Color pixel)
         {
-            Rgba[0] = pixel.R;
-            Rgba[1] = pixel.G;
-            Rgba[2] = pixel.B;
-            Rgba[3] = pixel.A;
+            R = pixel.R;
+            G = pixel.G;
+            B = pixel.B;
         }
-        
-        /// <summary>
-        /// Устанавливает специальный цвет на пиксель.
-        /// </summary>
-        public void SetPixel(ScreenPixel pixel)
+
+        public void SetPixel(byte r, byte g, byte b)
         {
-            for (var i = 0; i < Rgba.Length; ++i)
-                Rgba[i] = pixel.Rgba[i];
+            R = r;
+            G = g;
+            B = b;
         }
 
         public IEnumerable<byte> ToBytes()
@@ -67,15 +60,16 @@ namespace CommandLib.Commands.RemoteCommandItems
             var x = BitConverter.GetBytes(X);
             var y = BitConverter.GetBytes(Y);
 
-            return x.Concat(y).Concat(Rgba).ToArray();
+            return x.Concat(y).Concat(new[] { R, G, B }).ToArray();
         }
 
         public static ScreenPixel FromBytes(byte[] data)
         {
-            var x = BitConverter.ToInt32(data.Take(IntLength).ToArray(), 0);
-            var y = BitConverter.ToInt32(data.Skip(IntLength).Take(IntLength).ToArray(), 0);
-
-            return new ScreenPixel(x, y, data.Skip(IntLength * 2).ToArray());
+            var x = BitConverter.ToInt16(data.Take(ShortLength).ToArray(), 0);
+            var y = BitConverter.ToInt16(data.Skip(ShortLength).Take(ShortLength).ToArray(), 0);
+            var rgb = data.Skip(ShortLength * 2).ToArray();
+            
+            return new ScreenPixel(x, y, rgb[0], rgb[1], rgb[2]);
         }
     }
 }

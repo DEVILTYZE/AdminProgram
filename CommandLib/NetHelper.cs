@@ -29,6 +29,7 @@ namespace CommandLib
 
         public const int BufferSize = 256;
         public const int CommandPort = 51000; // TCP
+        public const int KeysPort = 51010; // TCP
         public const int RemoteStreamPort = 52000; // UDP
         public const int RemoteControlPort = 52010; // UDP
         public const int RemoteCommandPort = 52020; // TCP

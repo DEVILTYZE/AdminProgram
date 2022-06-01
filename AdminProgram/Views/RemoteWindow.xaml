@@ -12,18 +12,18 @@
         MinHeight="500"
         MinWidth="500"
         Closed="RemoteWindow_OnClosed"
+        Closing="RemoteWindow_OnClosing"
         Loaded="RemoteWindow_OnLoaded">
     <Window.DataContext>
         <viewModels:RemoteViewModel />
     </Window.DataContext>
     <Grid>
-        <InkCanvas x:Name="Screen"
-                   KeyDown="Screen_OnKeyDown"
-                   MouseMove="Screen_OnMouseMove"
-                   MouseWheel="Screen_OnMouseWheel"
-                   MouseLeftButtonUp="Screen_OnMouseLeftButtonUp"
-                   MouseRightButtonUp="Screen_OnMouseRightButtonUp">
-            <Image x:Name="ScreenImage" Source="{Binding ImageScreen}" />
-        </InkCanvas>
+        <Image x:Name="ScreenImage" 
+               KeyDown="ScreenImage_OnKeyDown"
+               MouseMove="ScreenImage_OnMouseMove"
+               MouseWheel="ScreenImage_OnMouseWheel"
+               MouseLeftButtonUp="ScreenImage_OnMouseLeftButtonUp"
+               MouseRightButtonUp="ScreenImage_OnMouseRightButtonUp"
+               Margin="10" />
     </Grid>
 </Window>

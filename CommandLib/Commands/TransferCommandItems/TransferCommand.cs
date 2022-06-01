@@ -47,7 +47,7 @@ namespace CommandLib.Commands.TransferCommandItems
             if (length > NetHelper.MaxFileLength)
                 return new CommandResult(CommandResultStatus.Failed, Encoding.UTF8.GetBytes(ConstHelper.FileLengthError));
 
-            if (!File.Exists(path) || isDirectory && !Directory.Exists(path))
+            if (!File.Exists(path) && !Directory.Exists(path))
                 return new CommandResult(CommandResultStatus.Failed, Encoding.UTF8.GetBytes(ConstHelper.FileError));
 
             Task.Run(() => TransferFiles((endPoint, path, isDirectory)));

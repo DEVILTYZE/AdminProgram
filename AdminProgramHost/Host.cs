@@ -221,9 +221,7 @@ namespace AdminProgramHost
             {
                 case CommandType.Execute:
                     var result = command.Execute();
-                            
-                    if (command is RemoteCommand or TransferCommand)
-                        _savedCommands.Add(command);
+                    AddCommand(command);
                             
                     return result;
                 case CommandType.Abort:
@@ -239,6 +237,25 @@ namespace AdminProgramHost
                     
                     return new CommandResult(CommandResultStatus.Successed, null);
             }
+        }
+
+        private void AddCommand(ICommand command)
+        {
+            var types = new[] { typeof(RemoteCommand), typeof(TransferCommand) };
+
+            foreach (var type in types)
+                if (command.GetType().IsEquivalentTo(type))
+                {
+                    for (var i = 0; i < _savedCommands.Count; ++i)
+                        if (command.GetType().IsEquivalentTo(_savedCommands[i].GetType()))
+                        {
+                            _savedCommands[i].Abort();
+                            _savedCommands[i] = command;
+                            return;
+                        }
+                    
+                    _savedCommands.Add(command);
+                }
         }
 
         private IPEndPoint GetEndPoint(int port)

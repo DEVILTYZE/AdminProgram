@@ -1,13 +1,15 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Drawing;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Media.Imaging;
 using AdminProgram.Annotations;
+using AdminProgram.Helpers;
 using AdminProgram.Models;
 using CommandLib;
 using CommandLib.Commands.Helpers;
@@ -19,13 +21,18 @@ namespace AdminProgram.ViewModels
     public sealed class RemoteViewModel : INotifyPropertyChanged
     {
         private readonly Host _host;
-        private bool _isAliveRemoteConnection;
-        private Bitmap _imageScreen;
-        private int _height, _width;
-        private readonly RemoteControl _currentControlState;
+        private readonly RemoteControlObject _currentControlState;
         private readonly IPEndPoint _ourIpEndPoint;
+
+        private bool _reconnect;
+        private bool _isAliveRemoteConnection;
+        private UdpClient _udpClient;
+        private BitmapImage _imageScreen;
+        private int _height, _width;
         private RSAParameters[] _keys;
-        private ScreenMatrix _screen;
+        private byte[] _imageArray;
+
+        public readonly string ImageSourcePath = Environment.CurrentDirectory + "\\src.jpg";
 
         public Host Host
         {
@@ -47,7 +54,7 @@ namespace AdminProgram.ViewModels
             }
         }
 
-        public Bitmap ImageScreen
+        public BitmapImage ImageScreen
         {
             get => _imageScreen;
             set
@@ -77,13 +84,23 @@ namespace AdminProgram.ViewModels
             }
         }
 
-        public RemoteControl CurrentControlState
+        public RemoteControlObject CurrentControlState
         {
             get => _currentControlState;
             init
             {
                 _currentControlState = value;
                 OnPropertyChanged(nameof(CurrentControlState));
+            }
+        }
+
+        public bool Reconnect
+        {
+            get => _reconnect;
+            set
+            {
+                _reconnect = value;
+                OnPropertyChanged(nameof(Reconnect));
             }
         }
 
@@ -95,14 +112,17 @@ namespace AdminProgram.ViewModels
 
         public RemoteViewModel()
         {
-            CurrentControlState = new RemoteControl();
-            _height = _width = 500; // Просто 500.
+            CurrentControlState = new RemoteControlObject();
+            Height = 950;
+            Width = 1400;
         }
 
         public void StartRemoteConnection()
         {
+            Reconnect = false;
             IsAliveRemoteConnection = true;
             Task.Run(Stream);
+            //Task.Run(Control); TODO: CONTROL>>>
         }
 
         public bool CloseRemoteConnection()
@@ -134,13 +154,13 @@ namespace AdminProgram.ViewModels
             }
             catch (SocketException)
             {
+                return true;
             }
             finally
             {
                 client?.Close();
+                _udpClient?.Close();
             }
-
-            return false;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -155,7 +175,6 @@ namespace AdminProgram.ViewModels
         {
             var remoteIp = new IPEndPoint(IPAddress.Parse(Host.IpAddress), NetHelper.RemoteCommandPort);
             TcpClient tcpClient = null;
-            UdpClient udpClient = null;
 
             try
             {
@@ -172,19 +191,20 @@ namespace AdminProgram.ViewModels
                 
                 tcpClient = new TcpClient(Host.IpAddress, NetHelper.RemoteCommandPort);
                 _keys = RsaEngine.GetKeys();
+                var task = Task.Run(() => KeySwap(new IPEndPoint(_ourIpEndPoint.Address, NetHelper.KeysPort)));
                 var remoteObject = new RemoteObject(_ourIpEndPoint.Address.ToString(), NetHelper.RemoteStreamPort);
                 var command = new RemoteCommand(remoteObject.ToBytes(), _keys[1]);
                 var datagram = new Datagram(command.ToBytes(), typeof(RemoteCommand), publicKey.Value);
                 var bytes = datagram.ToBytes();
-
+                
                 using (var stream = tcpClient.GetStream())
                 {
                     stream.Write(bytes, 0, bytes.Length);
-
+                    
                     bytes = NetHelper.StreamRead(stream);
                 }
                 
-                KeySwap(new IPEndPoint(_ourIpEndPoint.Address, NetHelper.RemoteCommandPort));
+                task.Wait();
                 datagram = Datagram.FromBytes(bytes);
                 var result = CommandResult.FromBytes(datagram.GetData(_keys[0]));
                 
@@ -193,28 +213,43 @@ namespace AdminProgram.ViewModels
                     IsAliveRemoteConnection = false;
                     return;
                 }
+
+                Height = BitConverter.ToInt32(result.Data.AsSpan()[..4]);
+                Width = BitConverter.ToInt32(result.Data.AsSpan()[4..]);
                 
-                Task.Run(() => Control(publicKey));
-                remoteIp = new IPEndPoint(remoteIp.Address, NetHelper.RemoteStreamPort);
-                udpClient = new UdpClient(remoteIp.Port);
-                
+                remoteIp = null;
+                _udpClient = new UdpClient(NetHelper.RemoteStreamPort);
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    _imageArray = ByteHelper.ImageToBytes(BitmapImageHelper.BitmapImageToBitmap(ImageScreen));
+                });
+
                 while (IsAliveRemoteConnection)
                 {
-                    var data = udpClient.Receive(ref remoteIp);
+                    var data = _udpClient.Receive(ref remoteIp);
                     var countOfBlocks = data[0];
                     data = data[^1..]; // 1 — количество блоков, 4 — длина, 4 — ширина.
 
+                    if (countOfBlocks is < 0 or > 30) // Переподключение, если слишком много блоков.
+                    {
+                        Reconnect = true;
+                        IsAliveRemoteConnection = false;
+                        break;
+                    }
+
                     for (var i = 0; i < countOfBlocks - 1; ++i)
-                        data = data.Concat(udpClient.Receive(ref remoteIp)).ToArray();
+                        data = data.Concat(_udpClient.Receive(ref remoteIp)).ToArray();
 
                     datagram = Datagram.FromBytes(data);
                     data = datagram.GetData(_keys[0]);
-                    var height = BitConverter.ToInt32(data.AsSpan()[..4]);
-                    var width = BitConverter.ToInt32(data.AsSpan()[^4..8]);
-                    var pixels = ScreenMatrix.GetPixelsFromBytesOrDefault(data[^8..]);
-
-                    _screen ??= new ScreenMatrix(height, width);
-                    _screen.UpdateScreen(pixels, ImageScreen);
+                    
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        _imageArray =  ByteHelper.ImagesXOrDecompress(data[^8..], _imageArray);
+                        data = _imageArray;
+                        ImageScreen = BitmapImageHelper.BitmapToBitmapImage(ByteHelper.BytesToImage(data));
+                    });
                 }
             }
             catch (SocketException)
@@ -223,23 +258,24 @@ namespace AdminProgram.ViewModels
             finally
             {
                 tcpClient?.Close();
-                udpClient?.Close();
+                _udpClient?.Close();
             }
         }
 
-        private void Control(object obj)
+        private void Control()
         {
-            var publicKey = (RSAParameters)obj;
             var remoteIp = new IPEndPoint(IPAddress.Parse(Host.IpAddress), NetHelper.RemoteControlPort);
-            var client = new UdpClient();
-            client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            client.Client.Bind(remoteIp);
-
+            UdpClient client = null;
+            
             try
             {
+                client = new UdpClient();
+                client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                client.Client.Bind(remoteIp);
+                
                 while (IsAliveRemoteConnection)
                 {
-                    var datagram = new Datagram(CurrentControlState.ToBytes(), typeof(RemoteControl), publicKey);
+                    var datagram = new Datagram(CurrentControlState.ToBytes(), typeof(RemoteControlObject), _keys[1]);
                     var bytes = datagram.ToBytes();
                     client.Send(bytes, bytes.Length, remoteIp);
                     CurrentControlState.ToStartState();
@@ -247,10 +283,12 @@ namespace AdminProgram.ViewModels
             }
             catch (SocketException)
             {
+                IsAliveRemoteConnection = false;
+                _udpClient?.Close();
             }
             finally
             {
-                client.Close();
+                client?.Close();
             }
         }
 
@@ -258,21 +296,15 @@ namespace AdminProgram.ViewModels
         {
             TcpListener server = null;
             TcpClient client = null;
-            _keys = RsaEngine.GetKeys();
 
             try
             {
                 server = new TcpListener(endPoint);
                 server.Start();
                 client = server.AcceptTcpClient();
-                byte[] bytes;
-                
-                
-                using (var stream = client.GetStream())
-                {
-                    bytes = NetHelper.StreamRead(stream);
-                }
-                
+
+                using var stream = client.GetStream();
+                var bytes = NetHelper.StreamRead(stream);
                 var datagram = Datagram.FromBytes(bytes);
                 var result = CommandResult.FromBytes(datagram.GetData());
                 var publicKey = result.PublicKey.GetKey();
@@ -280,16 +312,12 @@ namespace AdminProgram.ViewModels
                 result = new CommandResult(CommandResultStatus.Successed, null) { PublicKey = new RsaKey(_keys[1]) };
                 datagram = new Datagram(result.ToBytes(), typeof(CommandResult), publicKey);
                 bytes = datagram.ToBytes();
-
-                using (var stream = client.GetStream())
-                {
-                    stream.Write(bytes, 0, bytes.Length);
-                }
-                
+                stream.Write(bytes, 0, bytes.Length);
                 _keys[1] = publicKey;
             }
             catch (SocketException)
             {
+                IsAliveRemoteConnection = false;
             }
             finally
             {

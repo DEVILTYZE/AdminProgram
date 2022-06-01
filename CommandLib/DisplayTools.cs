@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace CommandLib
 {
-    static class DisplayTools
+    internal static class DisplayTools
     {
         [DllImport("gdi32.dll")]
         private static extern int GetDeviceCaps(IntPtr hdc, int nIndex);

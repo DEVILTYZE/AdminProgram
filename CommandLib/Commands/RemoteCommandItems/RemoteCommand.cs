@@ -17,11 +17,13 @@ namespace CommandLib.Commands.RemoteCommandItems
     [Serializable]
     public class RemoteCommand : AbstractCommand
     {
-        private static readonly Size LowQualitySize = new(900, 900);
+        private const int MaxSentDatagrams = 50;
+        private static readonly Size LowQualitySize = new(1400, 950);
         
         private bool _isActive;
-        private ScreenMatrix _screen;
+        private byte[] _currentImage;
         private RSAParameters[] _keys;
+        private UdpClient _udpClient;
 
         public RemoteCommand() { }
 
@@ -35,8 +37,7 @@ namespace CommandLib.Commands.RemoteCommandItems
 
             try
             {
-                remoteIp = (IPEndPoint)RemoteObject.FromBytes(Data, 
-                    typeof(RemoteObject)).GetData();
+                remoteIp = (IPEndPoint)RemoteObject.FromBytes(Data, typeof(RemoteObject)).GetData();
             }
             catch (Exception)
             {
@@ -44,11 +45,18 @@ namespace CommandLib.Commands.RemoteCommandItems
             }
 
             Task.Run(() => StartRemoteConnection(remoteIp));
+            Task.Run(() => RemoteControl(remoteIp));
+            var size = DisplayTools.GetPhysicalDisplaySize();
 
-            return new CommandResult(CommandResultStatus.Successed, Array.Empty<byte>());
+            return new CommandResult(CommandResultStatus.Successed, 
+                BitConverter.GetBytes(size.Height).Concat(BitConverter.GetBytes(size.Width)).ToArray());
         }
 
-        public override void Abort() => _isActive = false;
+        public override void Abort()
+        {
+            _isActive = false;
+            _udpClient.Close();
+        }
 
         private void StartRemoteConnection([CanBeNull] object obj)
         {
@@ -56,47 +64,86 @@ namespace CommandLib.Commands.RemoteCommandItems
                 return;
 
             var remoteIp = (IPEndPoint)obj;
-            var client = new UdpClient(remoteIp);
-            KeySwap(new IPEndPoint(remoteIp.Address, NetHelper.RemoteCommandPort));
-            var size = DisplayTools.GetPhysicalDisplaySize();
-            var image = new Bitmap(size.Width, size.Height);
-            var graphics = Graphics.FromImage(image);
-            _screen = new ScreenMatrix();
+            UdpClient client = null;
 
-            Task.Run(() => RemoteControl(_keys[0]));
-
-            while (_isActive)
+            try
             {
-                graphics.CopyFromScreen(0, 0, 0, 0, size);
-                image = ReduceQuality(image);
-                _screen.UpdateScreen(image);
+                client = new UdpClient();
+                client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                client.Client.Bind(remoteIp);
+                KeySwap(remoteIp.Address.ToString(), NetHelper.KeysPort);
+                var size = DisplayTools.GetPhysicalDisplaySize();
+                var resendScreenCount = 0;
 
-                var imageBytes = BitConverter.GetBytes(size.Height).Concat(BitConverter.GetBytes(size.Width))
-                    .Concat(_screen.GetUpdatedPixelsBytes()).ToArray();
-                var datagram = new Datagram(imageBytes, typeof(byte[]), RsaPublicKey);
-                var resultBytes = datagram.ToBytes();
-                
-                var countOfBlocks = resultBytes.Length % Datagram.Length == 0 
-                    ? (byte)(resultBytes.Length / Datagram.Length) 
-                    : (byte)(resultBytes.Length / Datagram.Length + 1);
-                
-                resultBytes = new[] { countOfBlocks }.Concat(resultBytes).ToArray();
-                
-                var listBytes = countOfBlocks > 1 
-                    ? CutImageBytes(resultBytes, countOfBlocks) 
-                    : new List<byte[]>(new[] { resultBytes });
+                while (_isActive)
+                {
+                    var image = new Bitmap(size.Width, size.Height);
+                    var graphics = Graphics.FromImage(image);
+                    graphics.CopyFromScreen(0, 0, 0, 0, size);
+                    image = ReduceQuality(image);
 
-                foreach (var byteArray in listBytes)
-                    client.Send(byteArray, byteArray.Length, remoteIp);
+                    if (resendScreenCount == MaxSentDatagrams)
+                    {
+                        _currentImage = null;
+                        resendScreenCount = 0;
+                    }
+
+                    var bytesImage = ByteHelper.ImageToBytes(image);
+                    var data = ByteHelper.ImagesXOrCompress((byte[])bytesImage.Clone(), _currentImage);
+                    _currentImage = bytesImage;
+
+                    if (data.Length == 0)
+                        continue;
+
+                    var datagram = new Datagram(data, typeof(byte[]), _keys[1]);
+                    var resultBytes = datagram.ToBytes();
+                    var countOfBlocks = resultBytes.Length % Datagram.Length == 0
+                        ? (byte)(resultBytes.Length / Datagram.Length)
+                        : (byte)(resultBytes.Length / Datagram.Length + 1);
+                    resultBytes = new[] { countOfBlocks }.Concat(resultBytes).ToArray();
+
+                    var listBytes = countOfBlocks > 1
+                        ? CutDatagramBytes(resultBytes, countOfBlocks)
+                        : new List<byte[]>(new[] { resultBytes });
+
+                    foreach (var byteArray in listBytes)
+                        client.Send(byteArray, byteArray.Length, remoteIp.Address.ToString(), remoteIp.Port);
+
+                    ++resendScreenCount;
+                }
+            }
+            catch (SocketException)
+            {
+                _isActive = false;
+                _udpClient?.Close();
+            }
+            finally
+            {
+                client?.Close();
             }
         }
 
-        private void RemoteControl(object obj)
+        private void RemoteControl(IPEndPoint remoteIp)
         {
-            // TODO: Доделать...
+            try
+            {
+                _udpClient = new UdpClient(remoteIp.Port);
+                var bytes = _udpClient.Receive(ref remoteIp);
+                var datagram = Datagram.FromBytes(bytes);
+                var remoteControl = RemoteControlObject.FromBytes(datagram.GetData(_keys[0]));
+                // TODO: CONTROL>>>
+            }
+            catch (SocketException)
+            {
+                _isActive = false;
+            }
+            finally
+            {
+                _udpClient?.Close();
+            }
         }
 
-        private void KeySwap(IPEndPoint endPoint)
+        private void KeySwap(string ipAddress, int port)
         {
             _keys = RsaEngine.GetKeys();
             var publicKey = new RsaKey(_keys[1]);
@@ -107,7 +154,7 @@ namespace CommandLib.Commands.RemoteCommandItems
             
             try
             {
-                client = new TcpClient(endPoint.Address.ToString(), endPoint.Port);
+                client = new TcpClient(ipAddress, port);
 
                 using (var stream = client.GetStream())
                 {
@@ -122,6 +169,7 @@ namespace CommandLib.Commands.RemoteCommandItems
             }
             catch (SocketException)
             {
+                _isActive = false;
             }
             finally
             {
@@ -129,14 +177,14 @@ namespace CommandLib.Commands.RemoteCommandItems
             }
         }
 
-        private static List<byte[]> CutImageBytes(byte[] bytes, byte countOfBlocks)
+        private static List<byte[]> CutDatagramBytes(byte[] bytes, byte countOfBlocks)
         {
             var list = new List<byte[]>(countOfBlocks);
             
-            for (var i = 0; i < countOfBlocks - 2; ++i)
+            for (var i = 0; i < countOfBlocks - 1; ++i)
                 list.Add(bytes[(Datagram.Length * i)..(Datagram.Length * (i + 1))]);
             
-            list.Add(bytes[(Datagram.Length * (countOfBlocks - 2))..]);
+            list.Add(bytes[(Datagram.Length * (countOfBlocks - 1))..]);
 
             return list;
         }
@@ -146,7 +194,7 @@ namespace CommandLib.Commands.RemoteCommandItems
             var widthCoef = (float)image.Width / LowQualitySize.Width;
             var heightCoef = (float)image.Height / LowQualitySize.Height;
             var ratio = widthCoef > heightCoef ? widthCoef : heightCoef;
-            int width = (int)(ratio * image.Width), height = (int)(ratio * image.Height);
+            int width = (int)(image.Width / ratio), height = (int)(image.Height / ratio);
             var rectangle = new Rectangle(0, 0, width, height);
             var newImage = new Bitmap(width, height);
             var g = Graphics.FromImage(newImage);

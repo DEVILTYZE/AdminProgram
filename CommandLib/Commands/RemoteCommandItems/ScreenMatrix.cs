@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 
 namespace CommandLib.Commands.RemoteCommandItems
@@ -10,74 +12,116 @@ namespace CommandLib.Commands.RemoteCommandItems
     /// </summary>
     public class ScreenMatrix
     {
+        private HashSet<ScreenPixel> _buffer;
         private ScreenPixel[,] _pixels;
+        
         private int Height => _pixels.GetLength(0);
         private int Width => _pixels.GetLength(1);
 
-        public ScreenMatrix() { }
+        public ScreenMatrix() => _buffer = new HashSet<ScreenPixel>();
 
-        public ScreenMatrix(int height, int width) => _pixels = new ScreenPixel[height, width];
-        
-        /// <summary>
-        /// Обновление пикселей в ScreenMatrix и на форме.
-        /// </summary>
-        /// <param name="pixels">Массив обновленных пикселей.</param>
-        /// <param name="screen">Текущее изображение экрана.</param>
-        public void UpdateScreen(IEnumerable<ScreenPixel> pixels, Bitmap screen)
+        public byte[] ToBytes(Bitmap nextState)
         {
-            var screenPixels = pixels as ScreenPixel[] ?? pixels.ToArray();
-            UpdateScreen(screenPixels);
-
-            foreach (var pixel in screenPixels)
-                screen.SetPixel(pixel.X, pixel.Y, Color.FromArgb(pixel.Rgba[3], pixel.Rgba[0], 
-                    pixel.Rgba[1], pixel.Rgba[2]));
-        }
-        
-        /// <summary>
-        /// Обновление статуса пикселей в ScreenMatrix.
-        /// </summary>
-        /// <param name="screen"></param>
-        public void UpdateScreen(Bitmap screen)
-        {
-            _pixels ??= new ScreenPixel[screen.Height, screen.Width];
+            BitmapData bitmapData;
             
-            if (_pixels[1, 0].Y == 0)
+            if (_pixels is null)
             {
-                SetupAllPixels(screen);
+                _pixels = new ScreenPixel[nextState.Height, nextState.Width];
+                bitmapData = nextState.LockBits(new Rectangle(0, 0, Width, Height), ImageLockMode.ReadOnly,
+                    PixelFormat.Format24bppRgb);
+                
+                try
+                {
+                    unsafe
+                    {
+                        for (short i = 0; i < Height; ++i)
+                        {
+                            var cursor = (byte*)bitmapData.Scan0 + i * bitmapData.Stride;
+
+                            for (short j = 0; j < Width; ++j)
+                            {
+                                if (i == Height - 1 && j == Width - 1)
+                                    break;
+                                
+                                _pixels[i, j] = new ScreenPixel(j, i, *++cursor, *++cursor, *++cursor);
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    nextState.UnlockBits(bitmapData);
+                }
+
+
+                return BitmapToBytes(nextState);
+            }
+
+            if (_buffer.Count > Datagram.Length - 2000)
+            {
+                _buffer = new HashSet<ScreenPixel>(Height * Width);
+                
+                return BitmapToBytes(nextState);
+            }
+
+            bitmapData = nextState.LockBits(new Rectangle(0, 0, Width, Height), ImageLockMode.ReadOnly,
+                PixelFormat.Format24bppRgb);
+
+            try
+            {
+                unsafe
+                {
+                    for (var i = 0; i < Height; ++i)
+                    {
+                        var cursor = (byte*)bitmapData.Scan0 + i * bitmapData.Stride;
+                        
+                        for (var j = 0; j < Width; ++j)
+                        {
+                            if (i == Height - 1 && j == Width - 1)
+                                break;
+
+                            var r = *++cursor;
+                            var g = *++cursor;
+                            var b = *++cursor;
+                            
+                            if (_pixels[i, j].Equals(r, g, b))
+                                continue;
+
+                            _buffer.Add(_pixels[i, j]);
+                            _pixels[i, j].SetPixel(r, g, b);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                nextState.UnlockBits(bitmapData);
+            }
+
+            return GetPixelsBytes(_buffer.ToArray());
+        }
+
+        public static void FromBytes(byte[] data, ref Bitmap image)
+        {
+            var length = BitConverter.ToInt32(data.AsSpan()[..4]);
+
+            if (length < 0)
+            {
+                using var ms = new MemoryStream();
+                ms.Write(data, 0, data.Length);
+                image = new Bitmap(ms);
+                
                 return;
             }
             
-            for (var i = 0; i < Height; ++i)
-            for (var j = 0; j < Width; ++j)
-            {
-                var pixel = screen.GetPixel(j, i);
-
-                if (_pixels[i, j].Equals(pixel)) 
-                    continue;
-                
-                _pixels[i, j].SetPixel(pixel);
-                _pixels[i, j].IsUpdated = true;
-            }
+            var pixels = GetPixelsFromBytesOrDefault(data, length);
+            
+            foreach (var pixel in pixels)
+                image.SetPixel(pixel.X, pixel.Y, Color.FromArgb(pixel.R, pixel.G, pixel.B));
         }
 
-        /// <summary>
-        /// Получение массива байт, представляющего собой массив из обновленных пикселей.
-        /// </summary>
-        /// <returns>Массив байт.</returns>
-        public byte[] GetUpdatedPixelsBytes()
+        private static IEnumerable<ScreenPixel> GetPixelsFromBytesOrDefault(byte[] data, int length)
         {
-            var array = _pixels.Cast<ScreenPixel>().Where(pixel => pixel.IsUpdated).ToArray();
-            UpdateToFalse(array);
-            var resultArray = BitConverter.GetBytes(array.Length);
-            var result = resultArray.AsEnumerable();
-            result = array.Aggregate(result, (current, pixel) => current.Concat(pixel.ToBytes()));
-
-            return result.ToArray();
-        }
-
-        public static ScreenPixel[] GetPixelsFromBytesOrDefault(byte[] data)
-        {
-            var length = BitConverter.ToInt32(data.AsSpan()[0..4]);
             data = data.Skip(4).ToArray();
             
             if (length < 0)
@@ -91,31 +135,22 @@ namespace CommandLib.Commands.RemoteCommandItems
 
             return pixels;
         }
-        
-        /// <summary>
-        /// Обновление пикселей в ScreenMatrix.
-        /// </summary>
-        /// <param name="pixels">Массив обновленных пикселей.</param>
-        private void UpdateScreen(IEnumerable<ScreenPixel> pixels)
+
+        private static byte[] GetPixelsBytes(IReadOnlyCollection<ScreenPixel> array)
         {
-            foreach (var pixel in pixels)
-                _pixels[pixel.Y, pixel.X].SetPixel(pixel);
+            var resultArray = BitConverter.GetBytes(array.Count);
+            var result = resultArray.AsEnumerable();
+            result = array.Aggregate(result, (current, pixel) => current.Concat(pixel.ToBytes()));
+
+            return result.ToArray();
         }
 
-        private void SetupAllPixels(Bitmap screen)
+        private static byte[] BitmapToBytes(Image image)
         {
-            for (var i = 0; i < Height; ++i)
-            for (var j = 0; j < Width; ++j)
-            {
-                _pixels[i, j] = new ScreenPixel(j, i) { IsUpdated = true };
-                _pixels[i, j].SetPixel(screen.GetPixel(j, i));
-            }
-        }
+            using var ms = new MemoryStream();
+            image.Save(ms, ImageFormat.Jpeg);
 
-        private void UpdateToFalse(IEnumerable<ScreenPixel> array)
-        {
-            foreach (var pixel in array)
-                _pixels[pixel.Y, pixel.X].IsUpdated = false;
+            return ms.ToArray();
         }
     }
 }

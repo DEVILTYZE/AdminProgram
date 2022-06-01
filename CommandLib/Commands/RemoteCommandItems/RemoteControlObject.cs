@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 namespace CommandLib.Commands.RemoteCommandItems
 {
     [Serializable]
-    public class RemoteControl
+    public class RemoteControlObject
     {
         public double MouseX { get; set; }
         public double MouseY { get; set; }
@@ -15,7 +15,7 @@ namespace CommandLib.Commands.RemoteCommandItems
         public byte Key { get; set; }
 
         [JsonConstructor]
-        public RemoteControl()
+        public RemoteControlObject()
         {
         }
 
@@ -31,7 +31,7 @@ namespace CommandLib.Commands.RemoteCommandItems
 
         public byte[] ToBytes() => JsonSerializer.SerializeToUtf8Bytes(this, ConstHelper.Options);
 
-        public static RemoteControl FromBytes(byte[] data) =>
-            JsonSerializer.Deserialize<RemoteControl>(data, ConstHelper.Options);
+        public static RemoteControlObject FromBytes(byte[] data) =>
+            JsonSerializer.Deserialize<RemoteControlObject>(data, ConstHelper.Options);
     }
 }

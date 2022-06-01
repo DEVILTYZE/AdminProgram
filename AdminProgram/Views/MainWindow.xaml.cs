@@ -101,11 +101,8 @@ namespace AdminProgram.Views
         private void RemoteButton_OnClick(object sender, RoutedEventArgs e)
         {
             ChangeRemoteStatus?.Invoke(false);
-            var remoteWindow = new RemoteWindow(_model.SelectedHost, _model.GetOurIpEndPoint(), ChangeRemoteStatus)
-            {
-                Owner = this
-            };
-            remoteWindow.ShowDialog();
+            var remoteWindow = new RemoteWindow(_model.SelectedHost, _model.GetOurIpEndPoint(), ChangeRemoteStatus);
+            remoteWindow.Show();
         }
 
         private void ChangeRemoteButtonStatus(bool isEnabled) => RemoteButton.IsEnabled = isEnabled;

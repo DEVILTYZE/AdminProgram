@@ -238,7 +238,9 @@ namespace AdminProgram.ViewModels
                 
                 datagram = Datagram.FromBytes(bytes);
                 var result = CommandResult.FromBytes(datagram.GetData(keys[0]));
-                host.IsTransfers = result.Status == CommandResultStatus.Successed;
+                
+                if (result.Status == CommandResultStatus.Failed)
+                    host.IsTransfers = false;
             }
             catch (SocketException)
             {
@@ -267,6 +269,7 @@ namespace AdminProgram.ViewModels
                 
                 client = host.TransferServer.AcceptTcpClient();
                 client.Client.ReceiveTimeout = NetHelper.Timeout;
+                var mainLength = 0;
                 using var stream = client.GetStream();
                 var countOfFiles = stream.ReadByte();
 
@@ -275,7 +278,14 @@ namespace AdminProgram.ViewModels
                     var data = new byte[4];
                     stream.Read(data, 0, data.Length);
                     var length = BitConverter.ToInt32(data);
+                    mainLength += length;
                     var currentByteList = new List<byte>(NetHelper.BufferSize);
+
+                    if (mainLength > NetHelper.MaxFileLength)
+                    {
+                        host.IsTransfers = false;
+                        return;
+                    }
 
                     while (length > 0)
                     {
@@ -300,24 +310,30 @@ namespace AdminProgram.ViewModels
                 host.TransferServer?.Stop();
             }
 
+            if (responseList.Sum(bytes => bytes.Length) > NetHelper.MaxFileLength)
+            {
+                host.IsTransfers = false;
+                return;
+            }
+            
             for (var i = 0; i < responseList.Count && host.IsTransfers; ++i)
             {
                 var count = 1;
-                var path = _filesDirectory + host + namesList[i];
+                var path = _filesDirectory + host + "\\";
+                var extension = Path.GetExtension(namesList[i]);
+                var fullName = path + Path.GetFileNameWithoutExtension(namesList[i]);
 
-                if (!Directory.Exists(_filesDirectory + host + "\\"))
-                    Directory.CreateDirectory(_filesDirectory + host + "\\");
+                if (!Directory.Exists(path))
+                    Directory.CreateDirectory(path);
+
+                path = fullName + extension;
                 
                 while (File.Exists(path))
                 {
-                    if (count == 1)
-                        path += $"({count})";
-                    else
-                        path = path[..path.LastIndexOf('(')] + $"({count})";
-
+                    path = fullName + $"({count})" + extension;
                     ++count;
                 }
-                    
+                
                 File.WriteAllBytes(path, responseList[i]);
             }
 
@@ -460,9 +476,12 @@ namespace AdminProgram.ViewModels
             var ports = new[]
             {
                 NetHelper.CommandPort, NetHelper.RemoteStreamPort, NetHelper.RemoteControlPort, 
-                NetHelper.RemoteCommandPort, NetHelper.TransferPort, NetHelper.TransferCommandPort
+                NetHelper.RemoteCommandPort, NetHelper.TransferPort, NetHelper.TransferCommandPort, NetHelper.KeysPort
             };
-            var protocols = new[] { tcpString, udpString, udpString, tcpString, tcpString, tcpString, tcpString };
+            var protocols = new[]
+            {
+                tcpString, udpString, udpString, tcpString, tcpString, tcpString, tcpString, tcpString
+            };
             
             for (var i = 0; i < ports.Length; ++i)
             for (var j = 0; j < countOfRepeat; ++j)
