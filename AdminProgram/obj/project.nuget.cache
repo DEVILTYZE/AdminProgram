@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "Th11Tx3jWfXSWAgwSgP1gcn8MnMEv3PJ6wWLa2IjhyIEmu9WwQaY6htzR9CPc2CxQfRAxfFyMEfqA7X6ApxiOg==",
+  "dgSpecHash": "GQDoTWU0INeehPjs4WdRkxx259Z//PMebVmHUmN6NppaPmtbKYEMaY13JjiAn/FbFe9QxUxoxAD0FIJLmkBiqA==",
   "success": true,
   "projectFilePath": "E:\\Disk D\\ProjectsCode\\C#\\Diplom\\AdminProgram\\AdminProgram\\AdminProgram.csproj",
   "expectedPackageFiles": [
@@ -27,6 +27,7 @@
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\runtime.win-arm64.runtime.native.system.data.sqlclient.sni\\4.4.0\\runtime.win-arm64.runtime.native.system.data.sqlclient.sni.4.4.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\runtime.win-x64.runtime.native.system.data.sqlclient.sni\\4.4.0\\runtime.win-x64.runtime.native.system.data.sqlclient.sni.4.4.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\runtime.win-x86.runtime.native.system.data.sqlclient.sni\\4.4.0\\runtime.win-x86.runtime.native.system.data.sqlclient.sni.4.4.0.nupkg.sha512",
+    "C:\\Users\\user\\.nuget\\packages\\sharpcompress\\0.31.0\\sharpcompress.0.31.0.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\system.codedom\\4.7.0\\system.codedom.4.7.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\system.collections\\4.3.0\\system.collections.4.3.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\system.collections.concurrent\\4.3.0\\system.collections.concurrent.4.3.0.nupkg.sha512",

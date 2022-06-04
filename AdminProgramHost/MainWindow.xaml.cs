@@ -18,6 +18,11 @@ namespace AdminProgramHost
         {
             InitializeComponent();
 
+            if (!NetHelper.AddFirewallRules("AdminService", "TCP", false, true) ||
+                !NetHelper.AddFirewallRules("AdminService", "UDP", false, true))
+                MessageBox.Show("Не добавились правила для брандмауэра", "Ошибка", MessageBoxButton.OK, 
+                    MessageBoxImage.Error);
+            
             _model = new Host();
             DataContext = _model;
             var result = MessageBoxResult.None;

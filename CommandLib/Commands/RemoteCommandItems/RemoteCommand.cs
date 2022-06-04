@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using CommandLib.Annotations;
 using CommandLib.Commands.Helpers;
@@ -45,7 +46,7 @@ namespace CommandLib.Commands.RemoteCommandItems
             }
 
             Task.Run(() => StartRemoteConnection(remoteIp));
-            Task.Run(() => RemoteControl(remoteIp));
+            Task.Run(RemoteControl);
             var size = DisplayTools.GetPhysicalDisplaySize();
 
             return new CommandResult(CommandResultStatus.Successed, 
@@ -69,8 +70,6 @@ namespace CommandLib.Commands.RemoteCommandItems
             try
             {
                 client = new UdpClient();
-                client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                client.Client.Bind(remoteIp);
                 KeySwap(remoteIp.Address.ToString(), NetHelper.KeysPort);
                 var size = DisplayTools.GetPhysicalDisplaySize();
                 var resendScreenCount = 0;
@@ -97,9 +96,9 @@ namespace CommandLib.Commands.RemoteCommandItems
 
                     var datagram = new Datagram(data, typeof(byte[]), _keys[1]);
                     var resultBytes = datagram.ToBytes();
-                    var countOfBlocks = resultBytes.Length % Datagram.Length == 0
-                        ? (byte)(resultBytes.Length / Datagram.Length)
-                        : (byte)(resultBytes.Length / Datagram.Length + 1);
+                    var countOfBlocks = resultBytes.Length % Datagram.UdpLength == 0
+                        ? (byte)(resultBytes.Length / Datagram.UdpLength)
+                        : (byte)(resultBytes.Length / Datagram.UdpLength + 1);
                     resultBytes = new[] { countOfBlocks }.Concat(resultBytes).ToArray();
 
                     var listBytes = countOfBlocks > 1
@@ -110,6 +109,7 @@ namespace CommandLib.Commands.RemoteCommandItems
                         client.Send(byteArray, byteArray.Length, remoteIp.Address.ToString(), remoteIp.Port);
 
                     ++resendScreenCount;
+                    Thread.Sleep(20);
                 }
             }
             catch (SocketException)
@@ -123,11 +123,13 @@ namespace CommandLib.Commands.RemoteCommandItems
             }
         }
 
-        private void RemoteControl(IPEndPoint remoteIp)
+        private void RemoteControl()
         {
+            IPEndPoint remoteIp = null;
+            
             try
             {
-                _udpClient = new UdpClient(remoteIp.Port);
+                _udpClient = new UdpClient(NetHelper.RemoteControlPort);
                 var bytes = _udpClient.Receive(ref remoteIp);
                 var datagram = Datagram.FromBytes(bytes);
                 var remoteControl = RemoteControlObject.FromBytes(datagram.GetData(_keys[0]));
@@ -182,9 +184,9 @@ namespace CommandLib.Commands.RemoteCommandItems
             var list = new List<byte[]>(countOfBlocks);
             
             for (var i = 0; i < countOfBlocks - 1; ++i)
-                list.Add(bytes[(Datagram.Length * i)..(Datagram.Length * (i + 1))]);
+                list.Add(bytes[(Datagram.UdpLength * i)..(Datagram.UdpLength * (i + 1))]);
             
-            list.Add(bytes[(Datagram.Length * (countOfBlocks - 1))..]);
+            list.Add(bytes[(Datagram.UdpLength * (countOfBlocks - 1))..]);
 
             return list;
         }

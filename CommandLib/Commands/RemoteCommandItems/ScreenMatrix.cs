@@ -57,7 +57,7 @@ namespace CommandLib.Commands.RemoteCommandItems
                 return BitmapToBytes(nextState);
             }
 
-            if (_buffer.Count > Datagram.Length - 2000)
+            if (_buffer.Count > Datagram.UdpLength - 2000)
             {
                 _buffer = new HashSet<ScreenPixel>(Height * Width);
                 

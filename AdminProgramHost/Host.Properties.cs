@@ -12,8 +12,7 @@ namespace AdminProgramHost
 {
     public partial class Host : INotifyPropertyChanged
     {
-        private static readonly string MacDatPath = Environment.CurrentDirectory + "\\mac.apd";
-        private static readonly string LogsPath = Environment.CurrentDirectory + "\\logs\\logs" + DateTime.Now.ToString(
+        private static readonly string LogsPath = Environment.CurrentDirectory + "\\logs\\log" + DateTime.Now.ToString(
             "yyyyMMddHHmmss") + ".txt";
 
         private readonly object _locker = new();

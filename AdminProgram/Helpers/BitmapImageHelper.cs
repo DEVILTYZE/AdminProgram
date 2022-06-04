@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Windows;
 using System.Windows.Interop;
@@ -12,25 +13,40 @@ namespace AdminProgram.Helpers
         [System.Runtime.InteropServices.DllImport("gdi32.dll")]
         private static extern bool DeleteObject(IntPtr hObject);
 
+        // public static BitmapImage BitmapToBitmapImage(Bitmap bitmap)
+        // {
+        //     var hBitmap = bitmap.GetHbitmap();
+        //     BitmapImage retval;
+        //
+        //     try
+        //     {
+        //         retval = (BitmapImage)Imaging.CreateBitmapSourceFromHBitmap(
+        //             hBitmap,
+        //             IntPtr.Zero,
+        //             Int32Rect.Empty,
+        //             BitmapSizeOptions.FromEmptyOptions());
+        //     }
+        //     finally
+        //     {
+        //         DeleteObject(hBitmap);
+        //     }
+        //
+        //     return retval;
+        // }
+
         public static BitmapImage BitmapToBitmapImage(Bitmap bitmap)
         {
-            var hBitmap = bitmap.GetHbitmap();
-            BitmapImage retval;
+            using var ms = new MemoryStream();
+            bitmap.Save(ms, ImageFormat.Jpeg);
+            ms.Position = 0;
+            var bitmapImage = new BitmapImage();
+            bitmapImage.BeginInit();
+            bitmapImage.StreamSource = ms;
+            bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+            bitmapImage.EndInit();
+            bitmapImage.Freeze();
 
-            try
-            {
-                retval = (BitmapImage)Imaging.CreateBitmapSourceFromHBitmap(
-                    hBitmap,
-                    IntPtr.Zero,
-                    Int32Rect.Empty,
-                    BitmapSizeOptions.FromEmptyOptions());
-            }
-            finally
-            {
-                DeleteObject(hBitmap);
-            }
-
-            return retval;
+            return bitmapImage;
         }
 
         public static Bitmap BitmapImageToBitmap(BitmapImage bitmapImage)

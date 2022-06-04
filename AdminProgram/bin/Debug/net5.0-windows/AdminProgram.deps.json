@@ -124,6 +124,14 @@
           }
         }
       },
+      "SharpCompress/0.31.0": {
+        "runtime": {
+          "lib/net5.0/SharpCompress.dll": {
+            "assemblyVersion": "0.31.0.0",
+            "fileVersion": "0.31.0.0"
+          }
+        }
+      },
       "System.CodeDom/4.7.0": {},
       "System.Collections/4.3.0": {
         "dependencies": {
@@ -394,6 +402,7 @@
       "CommandLib/1.0.0": {
         "dependencies": {
           "SecurityChannel": "1.0.0",
+          "SharpCompress": "0.31.0",
           "System.Drawing.Common": "6.0.0"
         },
         "runtime": {
@@ -576,6 +585,13 @@
       "sha512": "sha512-YhEdSQUsTx+C8m8Bw7ar5/VesXvCFMItyZF7G1AUY+OM0VPZUOeAVpJ4Wl6fydBGUYZxojTDR3I6Bj/+BPkJNA==",
       "path": "runtime.win-x86.runtime.native.system.data.sqlclient.sni/4.4.0",
       "hashPath": "runtime.win-x86.runtime.native.system.data.sqlclient.sni.4.4.0.nupkg.sha512"
+    },
+    "SharpCompress/0.31.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-wFf5N0ysnlKbG54beDDm4Z1uqM0EAKTupEkTxyG4EGVE1uZgTtohuBd2BhTHR2gNweJ6agxKbMFzmzk181qqjw==",
+      "path": "sharpcompress/0.31.0",
+      "hashPath": "sharpcompress.0.31.0.nupkg.sha512"
     },
     "System.CodeDom/4.7.0": {
       "type": "package",

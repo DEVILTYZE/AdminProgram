@@ -42,3 +42,4 @@ E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Debug\net5.0-wind
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Debug\net5.0-windows\SecurityChannel.pdb
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\obj\Debug\net5.0-windows\Views\RemoteWindow.g.cs
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\obj\Debug\net5.0-windows\Views\RemoteWindow.baml
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Debug\net5.0-windows\SharpCompress.dll

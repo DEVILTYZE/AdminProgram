@@ -32,7 +32,7 @@ namespace AdminProgram.ViewModels
             RefreshTasks = new TaskList();
             _transferTasks = new TaskList();
             _hasDataBase = InitializeDb();
-
+            
             // Есть ли доступ в сеть.
             if (!NetworkInterface.GetIsNetworkAvailable())
                 return;
@@ -43,7 +43,7 @@ namespace AdminProgram.ViewModels
             // Находим остальные ПК в локальной сети и добавляем их в словарь.
             foreach (var ipAddress in _currentHost.AddressList.Where(NetHelper.IsInLocalNetwork))
                 CreateMacAddressTable(ipAddress.ToString());
-            
+
             SetPorts(CurrentIpAddress.ToString());
             Refresh();
         }
@@ -222,16 +222,16 @@ namespace AdminProgram.ViewModels
                     return;
 
                 var keys = RsaEngine.GetKeys();
-                var transferEndPoint = new IPEndPoint(CurrentIpAddress, 13000);
+                var transferEndPoint = new IPEndPoint(CurrentIpAddress, NetHelper.TransferPort);
                 var command = new TransferCommand(new TransferObject(transferEndPoint.Address.ToString(), 
                         transferEndPoint.Port, path).ToBytes(), keys[1]);
                 var datagram = new Datagram(command.ToBytes(), typeof(TransferCommand), publicKey.Value);
                 var bytes = datagram.ToBytes();
+                Task.Run(() => Transfer((transferEndPoint, host, keys[0])));
 
                 using (var stream = client.GetStream())
                 {
                     stream.Write(bytes, 0, bytes.Length);
-                    Task.Run(() => Transfer((transferEndPoint, host, keys[0])));
 
                     bytes = NetHelper.StreamRead(stream);
                 }
@@ -297,9 +297,9 @@ namespace AdminProgram.ViewModels
 
                     var datagram = Datagram.FromBytes(currentByteList.ToArray());
                     data = datagram.GetData(privateKey);
-                    length = BitConverter.ToInt32(new ArraySegment<byte>(data, 0, 4));
-                    namesList.Add(Encoding.UTF8.GetString(new ArraySegment<byte>(data, 4, length)));
-                    data = new ArraySegment<byte>(data, length - 1, data.Length - length + 1).ToArray();
+                    length = BitConverter.ToInt32(data.AsSpan()[..4]);
+                    namesList.Add(Encoding.UTF8.GetString(data.AsSpan()[4..(length + 4)]));
+                    data = data.AsSpan()[(length + 4)..].ToArray();
                     responseList.Add(data);
                 }
             }
@@ -509,7 +509,7 @@ namespace AdminProgram.ViewModels
                 return false;
             }
 
-            Hosts = new ObservableCollection<Host>(_db.Hosts.Local.Where(thisHost => thisHost.Id == 1)
+            Hosts = new ObservableCollection<Host>(_db.Hosts.Local//.Where(thisHost => thisHost.Id == 1)
                 .Select(thisHost => new Host(thisHost)));
             OnPropertyChanged(nameof(Hosts));
             

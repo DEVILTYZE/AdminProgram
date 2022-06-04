@@ -10,7 +10,8 @@ namespace CommandLib
     [Serializable]
     public class Datagram
     {
-        public const int Length = 65507;
+        public const int UdpLength = 65507;
+        public const int TcpLength = 1500;
         
         private static JsonSerializerOptions _options = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
         

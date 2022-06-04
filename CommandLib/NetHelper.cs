@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -23,8 +24,8 @@ namespace CommandLib
     
     public static class NetHelper
     {
-        private static readonly string RequestPath = Environment.CurrentDirectory + "\\request.apd";
-        private static readonly string LocationPath = Environment.CurrentDirectory + "\\location.apd";
+        private static readonly string RequestPath = Environment.CurrentDirectory + "\\data\\request.apd";
+        private static readonly string LocationPath = Environment.CurrentDirectory + "\\data\\location.apd";
         private static readonly string[] LocalNetworks = { "192", "172", "10" };
 
         public const int BufferSize = 256;
@@ -35,9 +36,9 @@ namespace CommandLib
         public const int RemoteCommandPort = 52020; // TCP
         public const int TransferPort = 49500; // TCP
         public const int TransferCommandPort = 49510; // TCP
-        public const int Timeout = 1500;
+        public const int Timeout = 50000;
         public const int LoadTimeout = 17000;
-        public const int MaxFileLength = 157286400;
+        public const int MaxFileLength = 157286400; // 150 MB
 
         public static byte[] GetMagicPacket(string mac)
         {
@@ -134,6 +135,34 @@ namespace CommandLib
             while (stream.DataAvailable);
 
             return byteList.ToArray();
+        }
+
+        public static bool AddFirewallRules(string programName, string protocol, bool isService, bool isEnabled)
+        {
+            if (RuleExists(programName))
+                return true;
+            
+            var path = Directory.GetFiles(Environment.CurrentDirectory, "*.exe", 
+                    SearchOption.TopDirectoryOnly).FirstOrDefault();
+
+            if (!isService && string.IsNullOrEmpty(path))
+                return false;
+
+            var arguments = "advfirewall firewall add rule " +
+                            $"name=\"{programName}\" " +
+                            "dir=in " +
+                            "action=allow " +
+                            (isService ? $"service=\"{programName}\" " : $"program=\"{path}\" ") +
+                            $"enable={(isEnabled ? "yes" : "no")} " +
+                            $"protocol={protocol}";
+
+            Process.Start(new ProcessStartInfo(@"C:\Windows\System32\netsh.exe", arguments)
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true
+            });
+
+            return true;
         }
 
         public static bool SetPort(int port, int otherPort, string protocol, string ipAddress, int enabled, 
@@ -324,6 +353,20 @@ namespace CommandLib
             }
 
             return !string.IsNullOrEmpty(responseString);
+        }
+
+        private static bool RuleExists(string ruleName)
+        {
+            var arguments = $"advfirewall firewall show rule name=\"{ruleName}\"";
+            var result = Process.Start(new ProcessStartInfo(@"C:\Windows\System32\netsh.exe", arguments)
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            });
+            var output = result?.StandardOutput.ReadToEnd();
+
+            return !string.IsNullOrEmpty(output) && output.Contains(ruleName);
         }
     }
 }

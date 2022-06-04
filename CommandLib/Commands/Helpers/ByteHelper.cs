@@ -1,23 +1,24 @@
-﻿using System.Collections.Generic;
-using System.Drawing;
+﻿using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.IO.Compression;
+using SharpCompress.Compressors;
+using SharpCompress.Compressors.Deflate;
+using SharpCompress.IO;
 
 namespace CommandLib.Commands.Helpers
 {
     public static class ByteHelper
     {
-        public static byte[] ImagesXOrDecompress(byte[] byteArrayImage, byte[] byteArrayImage2)
+        public static byte[] ImagesXOrDecompress(byte[] imageByteArray, byte[] imageByteArray2)
         {
-            byteArrayImage = DecompressArray(byteArrayImage);
+            imageByteArray = DecompressArray(imageByteArray);
 
-            if (byteArrayImage2 is null)
-                return byteArrayImage;
+            if (imageByteArray2 is null)
+                return imageByteArray;
             
-            var firstBigger = byteArrayImage.Length > byteArrayImage2.Length;
-            var bigArray = firstBigger ? byteArrayImage : byteArrayImage2;
-            var smallArray = firstBigger ? byteArrayImage2 : byteArrayImage;
+            var firstBigger = imageByteArray.Length > imageByteArray2.Length;
+            var bigArray = firstBigger ? imageByteArray : imageByteArray2;
+            var smallArray = firstBigger ? imageByteArray2 : imageByteArray;
             
             for (var i = 0; i < smallArray.Length; ++i)
                 bigArray[i] ^= smallArray[i];
@@ -25,14 +26,14 @@ namespace CommandLib.Commands.Helpers
             return bigArray;
         }
         
-        public static byte[] ImagesXOrCompress(byte[] byteArrayImage, byte[] byteArrayImage2)
+        public static byte[] ImagesXOrCompress(byte[] imageByteArray, byte[] imageByteArray2)
         {
-            if (byteArrayImage2 is null)
-                return CompressArray(byteArrayImage);
+            if (imageByteArray2 is null)
+                return CompressArray(imageByteArray);
 
-            var firstBigger = byteArrayImage.Length > byteArrayImage2.Length;
-            var bigArray = firstBigger ? byteArrayImage : byteArrayImage2;
-            var smallArray = firstBigger ? byteArrayImage2 : byteArrayImage;
+            var firstBigger = imageByteArray.Length > imageByteArray2.Length;
+            var bigArray = firstBigger ? imageByteArray : imageByteArray2;
+            var smallArray = firstBigger ? imageByteArray2 : imageByteArray;
             
             for (var i = 0; i < smallArray.Length; ++i)
                 bigArray[i] ^= smallArray[i];
@@ -50,26 +51,30 @@ namespace CommandLib.Commands.Helpers
 
         public static Bitmap BytesToImage(byte[] array)
         {
-            using var ms = new MemoryStream(array);
-
-            return new Bitmap(ms);
+            using var ms = new NonDisposingStream(new MemoryStream(array));
+            
+            return Image.FromStream(ms) as Bitmap;
         }
 
         private static byte[] CompressArray(byte[] array)
         {
-            using var ms = new MemoryStream();
-            using var stream = new DeflateStream(ms, CompressionLevel.Optimal);
-            stream.Write(array, 0, array.Length);
-
-            return ms.ToArray();
+            using var msInput = new MemoryStream(array);
+            using var msOutput = new MemoryStream();
+            using var stream = new ZlibStream(msOutput, CompressionMode.Compress, CompressionLevel.Level5) 
+                { FlushMode = FlushType.Sync };
+            msInput.CopyTo(stream);
+            msOutput.Position = 0;
+            
+            return msOutput.ToArray();
         }
 
         private static byte[] DecompressArray(byte[] array)
         {
             using var msInput = new MemoryStream(array);
             using var msOutput = new MemoryStream();
-            using var stream = new DeflateStream(msInput, CompressionMode.Decompress);
+            using var stream = new ZlibStream(msInput, CompressionMode.Decompress);
             stream.CopyTo(msOutput);
+            msOutput.Position = 0;
 
             return msOutput.ToArray();
         }

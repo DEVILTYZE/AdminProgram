@@ -109,3 +109,4 @@ E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\obj\Debug\net5.0\Tests.dll
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\obj\Debug\net5.0\ref\Tests.dll
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\obj\Debug\net5.0\Tests.pdb
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\obj\Debug\net5.0\Tests.genruntimeconfig.cache
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\bin\Debug\net5.0\SharpCompress.dll

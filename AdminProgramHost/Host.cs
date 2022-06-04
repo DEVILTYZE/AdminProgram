@@ -37,13 +37,6 @@ namespace AdminProgramHost
 
         public void StartClientSession()
         {
-            if (File.Exists(MacDatPath))
-            {
-                using var sr = new StreamReader(MacDatPath);
-                _adminMacAddress = sr.ReadToEnd();
-            }
-            else return;
-            
             AreRunningTasks = true;
             _forceClose = false;
             _restart = false;
@@ -149,7 +142,7 @@ namespace AdminProgramHost
                 while (!_forceClose)
                 {
                     var client = server.AcceptTcpClient();
-                    
+
                     lock(_locker)
                         Logs += "Открытие клиента\r\n";
                     

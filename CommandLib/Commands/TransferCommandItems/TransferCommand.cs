@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -98,16 +99,19 @@ namespace CommandLib.Commands.TransferCommandItems
                     var datagram = new Datagram(fileBytes, typeof(byte[]), RsaPublicKey);
                     var bytes = datagram.ToBytes();
                     bytes = BitConverter.GetBytes(bytes.Length).Concat(bytes).ToArray();
-                    stream.Write(bytes, 0, bytes.Length);
+                    var listOfBytes = CutDatagramBytes(bytes);
+
+                    foreach (var currentBytes in listOfBytes)
+                        stream.Write(currentBytes, 0, currentBytes.Length);
                 }
             }
             catch (SocketException)
             {
-                // ignored
+                _isActive = false;
             }
             catch (Exception)
             {
-                // ignored
+                _isActive = false;
             }
             finally
             {
@@ -117,10 +121,28 @@ namespace CommandLib.Commands.TransferCommandItems
 
         private static byte[] FileNameToByteArray(string filePath)
         {
-            var fileName = filePath[filePath.LastIndexOf('\\')..];
+            var fileName = Path.GetFileName(filePath);
             var bytes = Encoding.UTF8.GetBytes(fileName);
 
             return BitConverter.GetBytes(bytes.Length).Concat(bytes).ToArray();
+        }
+
+        private static List<byte[]> CutDatagramBytes(byte[] bytes)
+        {
+            if (bytes.Length <= Datagram.TcpLength)
+                return new List<byte[]> { bytes };
+            
+            var countOfBlocks = bytes.Length % Datagram.TcpLength == 0
+                ? bytes.Length / Datagram.TcpLength
+                : bytes.Length / Datagram.TcpLength + 1;
+            var list = new List<byte[]>(countOfBlocks);
+            
+            for (var i = 0; i < countOfBlocks - 1; ++i)
+                list.Add(bytes[(Datagram.TcpLength * i)..(Datagram.TcpLength * (i + 1))]);
+            
+            list.Add(bytes[(Datagram.TcpLength * (countOfBlocks - 1))..]);
+
+            return list;
         }
     }
 }

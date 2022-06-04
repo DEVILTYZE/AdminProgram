@@ -2,7 +2,7 @@
 	<s:String x:Key="/Default/Environment/AssemblyExplorer/XmlDocument/@EntryValue">&lt;AssemblyExplorer&gt;&#xD;
   &lt;Assembly Path="C:\Users\user\.nuget\packages\mongodb.driver.core\2.15.0\runtimes\win\native\snappy32.dll" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=9974637d_002Dac7f_002D442b_002D9104_002D548222efa58a/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="EncryptInputDataZeroLengthTest" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=9974637d_002Dac7f_002D442b_002D9104_002D548222efa58a/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="EncryptInputDataZeroLengthTest" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;Or&gt;&#xD;
     &lt;ProjectFile&gt;7D6D210D-46B2-45CC-A014-B79E928B831C/d:SecurityChannelTests/f:AesTests.cs&lt;/ProjectFile&gt;&#xD;
     &lt;ProjectFile&gt;7D6D210D-46B2-45CC-A014-B79E928B831C/d:SecurityChannelTests/f:DatagramTests.cs&lt;/ProjectFile&gt;&#xD;
@@ -13,9 +13,17 @@
       &lt;TestId&gt;NUnit3x::7D6D210D-46B2-45CC-A014-B79E928B831C::net5.0::Tests.CommandLibTests.ScreenMatrixTests&lt;/TestId&gt;&#xD;
       &lt;TestId&gt;NUnit3x::7D6D210D-46B2-45CC-A014-B79E928B831C::net5.0::Tests.CommandLibTests.ObjectTests.TransferObjectToBytes&lt;/TestId&gt;&#xD;
       &lt;TestId&gt;NUnit3x::7D6D210D-46B2-45CC-A014-B79E928B831C::net5.0::Tests.CommandLibTests.ObjectTests.RemoteObjectToBytes&lt;/TestId&gt;&#xD;
+      &lt;TestId&gt;NUnit3x::7D6D210D-46B2-45CC-A014-B79E928B831C::net5.0::Tests.CommandLibTests.ImageTests.ByteArrayCommandResult&lt;/TestId&gt;&#xD;
+      &lt;TestId&gt;NUnit3x::7D6D210D-46B2-45CC-A014-B79E928B831C::net5.0::Tests.CommandLibTests.ImageTests.CompressDecompress&lt;/TestId&gt;&#xD;
     &lt;/TestAncestor&gt;&#xD;
     &lt;ProjectFile&gt;7D6D210D-46B2-45CC-A014-B79E928B831C/d:CommandLibTests/f:AbstractCommandTests.cs&lt;/ProjectFile&gt;&#xD;
   &lt;/Or&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=cc465fde_002D0ae0_002D4fbb_002D8931_002D3ee2f47ab89e/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="CompressDecompress #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;Project Location="E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests" Presentation="&amp;lt;Tests&amp;gt;" /&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=e7f2a22a_002Dffea_002D44c1_002D85bf_002Dd333ec30ad2e/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="CompressDecompress" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;Project Location="E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests" Presentation="&amp;lt;Tests&amp;gt;" /&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=decryptor/@EntryIndexedValue">True</s:Boolean>
 	
@@ -23,6 +31,7 @@
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=rootdevice/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=Sendable/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=Successed/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0412_043D_0438_043C_0430_043D_0438_0435/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0412_0441_043F_043E_043C_043E_0433_0430_0442_0435_043B_044C_043D_0430_044F/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0412_0441_043F_043E_043C_043E_0433_0430_0442_0435_043B_044C_043D_044B_0439/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0414_043E_0431_0430_0432_0438_0442_044C/@EntryIndexedValue">True</s:Boolean>
@@ -80,6 +89,7 @@
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0431_0430_0439_0442/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0431_043B_043E_043A/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0431_043B_043E_043A_043E_0432/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0431_0440_0430_043D_0434_043C_0430_0443_044D_0440_0430/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0431_0443_0434_0435_0442/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0432_0435_0440_043D_043E_0433_043E/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0432_0438_0434_0435/@EntryIndexedValue">True</s:Boolean>
@@ -95,6 +105,7 @@
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0434_0430_0442_0430_0433_0440_0430_043C_043C_044B/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0434_0435_043A_043E_0434_0438_0440_0443_0435_043C/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0434_043B_0438_043D_0430/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0434_043E_0431_0430_0432_0438_043B_0438_0441_044C/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0434_043E_0431_0430_0432_043B_044F_0435_043C/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0434_043E_0441_0442_0430_0432_043A_0438/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0434_043E_0441_0442_0430_0432_043B_044F_0435_043C/@EntryIndexedValue">True</s:Boolean>
@@ -143,6 +154,7 @@
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_043E_0442_043F_0440_0430_0432_043B_044F_0435_043C/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_043E_0448_0438_0431_043E_043A/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_043F_0430_043A_0435_0442_0430/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=_043F_0435_0440_0435_0434_0430_0447_0443/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_043F_0435_0440_0435_0434_0430_0451_043C/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_043F_0438_043A_0441_0435_043B_0435_0439/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_043F_0438_043A_0441_0435_043B_044C/@EntryIndexedValue">True</s:Boolean>
@@ -154,6 +166,7 @@
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_043F_043E_043C_043E_0449_044C_044E/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_043F_043E_0441_043B_0435/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_043F_043E_0448_043B_043E/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=_043F_0440_0430_0432_0438_043B_0430/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_043F_0440_0435_0434_0441_0442_0430_0432_043B_044F_044E_0449_0435_0433_043E/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_043F_0440_0438_043D_0438_043C_0430_0435_043C/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_043F_0440_0438_043D_044F_0442_0438_044F/@EntryIndexedValue">True</s:Boolean>
@@ -195,6 +208,7 @@
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0442_0435_043A_0443_0449_0435_0433_043E/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0442_043E_0447_043A_0430/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0442_043E_0447_043A_0438/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0442_043E_0447_043D_043E/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0442_0440_0435_0431_0443_0435_0442_0441_044F/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0443_0434_0430_043B_0451_043D/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0443_043F_0440_0430_0432_043B_0435_043D_0438_0435/@EntryIndexedValue">True</s:Boolean>
@@ -203,10 +217,12 @@
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0443_0441_0442_0430_043D_043E_0432_0438_0442_044C_0441_044F/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0443_0441_0442_0430_043D_043E_0432_043B_0435_043D/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0444_0430_0439_043B_0430/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0444_0430_0439_043B_043E_0432/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0444_0430_0439_043B_044B/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0444_043E_0440_043C_0435/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0444_043E_0440_043C_0438_0440_0443_0435_043C/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0445_043E_0441_0442_0430/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0445_043E_0442_0438_0442_0435/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0446_0432_0435_0442/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0446_0432_0435_0442_0443/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=_0447_0442_043E_0431_044B/@EntryIndexedValue">True</s:Boolean>

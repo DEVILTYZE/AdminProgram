@@ -100,11 +100,13 @@
                     IsEnabled="{Binding SelectedHost.Status, 
                     Converter={StaticResource StatusBoolPower}}"
                     Click="PowerButton_OnClick" />
+            <Button Style="{StaticResource {x:Type Button}}"
+                    Content="Обновить статус"
+                    IsEnabled="{Binding SelectedHost.Status, 
+                    Converter={StaticResource StatusBoolPower}}"
+                    Click="RefreshButton_OnClick"/>
             <StackPanel IsEnabled="{Binding SelectedHost.Status, 
                         Converter={StaticResource StatusBool}}">
-                <Button Style="{StaticResource {x:Type Button}}"
-                        Content="Обновить статус"
-                        Click="RefreshButton_OnClick"/>
                 <!-- IsEnabled="{Binding SelectedHost.Status,  -->
                 <!-- Converter={StaticResource StatusBool}}" -->
                 <Button x:Name="RemoteButton"

@@ -32,7 +32,7 @@ namespace AdminProgram.ViewModels
         private RSAParameters[] _keys;
         private byte[] _imageArray;
 
-        public readonly string ImageSourcePath = Environment.CurrentDirectory + "\\src.jpg";
+        public readonly string ImageSourcePath = Environment.CurrentDirectory + "\\data\\src.jpg";
 
         public Host Host
         {
@@ -220,18 +220,18 @@ namespace AdminProgram.ViewModels
                 remoteIp = null;
                 _udpClient = new UdpClient(NetHelper.RemoteStreamPort);
 
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    _imageArray = ByteHelper.ImageToBytes(BitmapImageHelper.BitmapImageToBitmap(ImageScreen));
-                });
+                // Application.Current.Dispatcher.Invoke(() =>
+                // {
+                //     _imageArray = ByteHelper.ImageToBytes(BitmapImageHelper.BitmapImageToBitmap(ImageScreen));
+                // });
 
                 while (IsAliveRemoteConnection)
                 {
-                    var data = _udpClient.Receive(ref remoteIp);
-                    var countOfBlocks = data[0];
-                    data = data[^1..]; // 1 — количество блоков, 4 — длина, 4 — ширина.
+                    bytes = _udpClient.Receive(ref remoteIp);
+                    var countOfBlocks = bytes[0];
+                    bytes = bytes[1..]; // 1 — количество блоков, 4 — длина, 4 — ширина.
 
-                    if (countOfBlocks is < 0 or > 30) // Переподключение, если слишком много блоков.
+                    if (countOfBlocks is < 0 or > 4) // Переподключение, если слишком много блоков.
                     {
                         Reconnect = true;
                         IsAliveRemoteConnection = false;
@@ -239,18 +239,32 @@ namespace AdminProgram.ViewModels
                     }
 
                     for (var i = 0; i < countOfBlocks - 1; ++i)
-                        data = data.Concat(_udpClient.Receive(ref remoteIp)).ToArray();
+                        bytes = bytes.Concat(_udpClient.Receive(ref remoteIp)).ToArray();
 
-                    datagram = Datagram.FromBytes(data);
-                    data = datagram.GetData(_keys[0]);
+                    datagram = Datagram.FromBytes(bytes);
+                    bytes = datagram.GetData(_keys[0]);
+                    var data = bytes;
                     
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        _imageArray =  ByteHelper.ImagesXOrDecompress(data[^8..], _imageArray);
-                        data = _imageArray;
-                        ImageScreen = BitmapImageHelper.BitmapToBitmapImage(ByteHelper.BytesToImage(data));
+                        _imageArray =  ByteHelper.ImagesXOrDecompress(data, _imageArray);
+                        
+                        try
+                        {
+                            var image = ByteHelper.BytesToImage(_imageArray);
+                            ImageScreen = BitmapImageHelper.BitmapToBitmapImage(image);
+                        }
+                        catch (Exception)
+                        {
+                            // ignored
+                        }
                     });
                 }
+            }
+            catch (OutOfMemoryException)
+            {
+                Reconnect = false;
+                IsAliveRemoteConnection = false;
             }
             catch (SocketException)
             {
@@ -264,20 +278,17 @@ namespace AdminProgram.ViewModels
 
         private void Control()
         {
-            var remoteIp = new IPEndPoint(IPAddress.Parse(Host.IpAddress), NetHelper.RemoteControlPort);
             UdpClient client = null;
             
             try
             {
                 client = new UdpClient();
-                client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                client.Client.Bind(remoteIp);
                 
                 while (IsAliveRemoteConnection)
                 {
                     var datagram = new Datagram(CurrentControlState.ToBytes(), typeof(RemoteControlObject), _keys[1]);
                     var bytes = datagram.ToBytes();
-                    client.Send(bytes, bytes.Length, remoteIp);
+                    client.Send(bytes, bytes.Length, Host.IpAddress, NetHelper.RemoteControlPort);
                     CurrentControlState.ToStartState();
                 }
             }

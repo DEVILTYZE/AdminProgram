@@ -26,8 +26,13 @@ namespace AdminProgram.Views
         public MainWindow()
         {
             InitializeComponent();
-            ChangeRemoteStatus += ChangeRemoteButtonStatus;
+
+            if (!NetHelper.AddFirewallRules("AdminProgram", "TCP", false, true) ||
+                !NetHelper.AddFirewallRules("AdminProgram", "UDP", false, true))
+                MessageBox.Show("Не добавились правила для брандмауэра", "Ошибка", MessageBoxButton.OK, 
+                    MessageBoxImage.Error);
             
+            ChangeRemoteStatus += ChangeRemoteButtonStatus;
             _model = (HostViewModel)DataContext;
             Scan(_model);
         }
@@ -56,7 +61,8 @@ namespace AdminProgram.Views
                 case HostStatus.Loading:
                 case HostStatus.Unknown:
                 default:
-                    MessageBox.Show("Ошибка switch.");
+                    MessageBox.Show("Ошибка switch.", "Ошибка", MessageBoxButton.OK, 
+                        MessageBoxImage.Error);
                     break;
             }
         }
@@ -64,7 +70,7 @@ namespace AdminProgram.Views
         private static void Scan(HostViewModel hostViewModel)
         {
             if (!hostViewModel.Scan())
-                MessageBox.Show("Scan error", "Error");
+                MessageBox.Show("Scan error", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         private void HostList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -74,7 +80,6 @@ namespace AdminProgram.Views
         
         private void RefreshButton_OnClick(object sender, RoutedEventArgs e)
             => _task = Task.Run(() => HostViewModel.Refresh(_model.SelectedHost));
-        
 
         private void MainWindow_OnKeyDown(object sender, KeyEventArgs e)
         {
@@ -117,7 +122,12 @@ namespace AdminProgram.Views
                     
                     break;
                 case true:
-                    _model.CloseTransfer();
+                    var answer = MessageBox.Show("Вы точно хотите отменить передачу файлов?", 
+                        "Внимание", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    
+                    if (answer == MessageBoxResult.Yes)
+                        _model.CloseTransfer();
+                    
                     break;
             }
         }
