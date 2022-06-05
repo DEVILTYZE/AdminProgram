@@ -48,6 +48,58 @@ namespace AdminProgram.ViewModels
             Refresh();
         }
 
+        public void AddHost([NotNull] Host host)
+        {
+            var hostInHosts = Hosts.FirstOrDefault(thisHost =>
+                string.CompareOrdinal(host.MacAddress, thisHost.MacAddress) == 0);
+
+            if (hostInHosts is null)
+            {
+                Hosts.Add(host);
+                OnPropertyChanged(nameof(Hosts));
+
+                if (_hasDataBase)
+                    _db.Hosts.Add(new HostDb
+                    {
+                        Name = host.Name,
+                        IpAddress = host.IpAddress,
+                        MacAddress = host.MacAddress
+                    });
+            }
+            else if ((string.CompareOrdinal(host.IpAddress, hostInHosts.IpAddress) != 0 ||
+                      string.CompareOrdinal(host.Name, hostInHosts.Name) != 0) && _hasDataBase)
+            {
+                var hostInDb = _db.Hosts.ToList().FirstOrDefault(thisHost =>
+                    string.CompareOrdinal(host.MacAddress, thisHost.MacAddress) == 0);
+
+                if (hostInDb is null)
+                    return;
+
+                hostInDb.Name = hostInHosts.Name = host.Name;
+                hostInDb.IpAddress = hostInHosts.IpAddress = host.IpAddress;
+                _db.Entry(hostInDb).State = EntityState.Modified;
+            }
+
+            if (_hasDataBase)
+                _db.SaveChanges();
+        }
+
+        public void RemoveHost([NotNull] Host host)
+        {
+            if (!Hosts.Contains(host))
+                return;
+
+            Hosts.Remove(host);
+            var hostInDb = _db.Hosts.ToList().FirstOrDefault(thisHost 
+                => string.CompareOrdinal(thisHost.MacAddress, host.MacAddress) == 0);
+
+            if (hostInDb is null) 
+                return;
+            
+            _db.Hosts.Remove(hostInDb);
+            _db.SaveChanges();
+        }
+
         /// <summary>
         /// Сканирование локальной сети на новые ПК.
         /// </summary>
@@ -63,6 +115,29 @@ namespace AdminProgram.ViewModels
             ScanTasks.Wait();
 
             return true;
+        }
+        
+        private void AddHost([NotNull] object obj)
+        {
+            var (ip, mac) = (KeyValuePair<string, string>)obj;
+            IPHostEntry hostEntry;
+
+            try
+            {
+                hostEntry = Dns.GetHostEntry(ip);
+            }
+            catch (SocketException)
+            {
+                return;
+            }
+
+            var host = new Host(hostEntry.HostName, ip, mac);
+            Task.Run(() => Refresh(host));
+
+            lock (_locker)
+            {
+                Application.Current.Dispatcher.BeginInvoke(new Action(() => { AddHost(host); }));
+            }
         }
 
         /// <summary>
@@ -156,8 +231,8 @@ namespace AdminProgram.ViewModels
 
             try
             {
-                
                 client = new TcpClient(host.IpAddress, NetHelper.CommandPort) { ReceiveTimeout = NetHelper.Timeout };
+                
                 if (!publicKey.HasValue)
                 {
                     host.Status = HostStatus.On;
@@ -172,13 +247,9 @@ namespace AdminProgram.ViewModels
                 using (var stream = client.GetStream())
                 {
                     stream.Write(bytes, 0, bytes.Length);
-
-                    bytes = NetHelper.StreamRead(stream);
                 }
 
-                datagram = Datagram.FromBytes(bytes);
-                var result = CommandResult.FromBytes(datagram.GetData(keys[0]));
-                host.Status = result.Status == CommandResultStatus.Successed ? HostStatus.Off : HostStatus.On;
+                Refresh(host);
             }
             catch (SocketException)
             {
@@ -388,63 +459,6 @@ namespace AdminProgram.ViewModels
 
         public IPEndPoint GetOurIpEndPoint() => new(CurrentIpAddress, NetHelper.CommandPort);
 
-        private void AddHost([NotNull] object obj)
-        {
-            var (ip, mac) = (KeyValuePair<string, string>)obj;
-            IPHostEntry hostEntry;
-
-            try
-            {
-                hostEntry = Dns.GetHostEntry(ip);
-            }
-            catch (SocketException)
-            {
-                return;
-            }
-
-            var host = new Host(hostEntry.HostName, ip, mac);
-            Task.Run(() => Refresh(host));
-
-            lock (_locker)
-            {
-                Application.Current.Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    var hostInHosts = Hosts.FirstOrDefault(thisHost =>
-                        string.CompareOrdinal(host.MacAddress, thisHost.MacAddress) == 0);
-
-                    if (hostInHosts is null)
-                    {
-                        Hosts.Add(host);
-                        OnPropertyChanged(nameof(Hosts));
-
-                        if (_hasDataBase)
-                            _db.Hosts.Add(new HostDb
-                            {
-                                Name = host.Name,
-                                IpAddress = host.IpAddress,
-                                MacAddress = host.MacAddress
-                            });
-                    }
-                    else if ((string.CompareOrdinal(host.IpAddress, hostInHosts.IpAddress) != 0 ||
-                             string.CompareOrdinal(host.Name, hostInHosts.Name) != 0) && _hasDataBase)
-                    {
-                        var hostInDb = _db.Hosts.ToList().FirstOrDefault(thisHost =>
-                            string.CompareOrdinal(host.MacAddress, thisHost.MacAddress) == 0);
-
-                        if (hostInDb is null)
-                            return;
-
-                        hostInDb.Name = hostInHosts.Name = host.Name;
-                        hostInDb.IpAddress = hostInHosts.IpAddress = host.IpAddress;
-                        _db.Entry(hostInDb).State = EntityState.Modified;
-                    }
-
-                    if (_hasDataBase)
-                        _db.SaveChanges();
-                }));
-            }
-        }
-
         private void CreateMacAddressTable(string ipAddress)
         {
             _addresses = new Dictionary<string, string>();
@@ -482,19 +496,26 @@ namespace AdminProgram.ViewModels
             {
                 tcpString, udpString, udpString, tcpString, tcpString, tcpString, tcpString, tcpString
             };
-            
-            for (var i = 0; i < ports.Length; ++i)
-            for (var j = 0; j < countOfRepeat; ++j)
-                if (NetHelper.SetPort(
-                        ports[i],
-                        ports[i],
-                        protocols[i],
-                        ipAddress,
-                        1,
-                        "AdminProgramHost",
-                        0
-                    ))
-                    break;
+
+            try
+            {
+                for (var i = 0; i < ports.Length; ++i)
+                for (var j = 0; j < countOfRepeat; ++j)
+                    if (NetHelper.SetPort(
+                            ports[i],
+                            ports[i],
+                            protocols[i],
+                            ipAddress,
+                            1,
+                            "AdminProgramHost",
+                            0
+                        ))
+                        break;
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
         }
 
         private bool InitializeDb()
@@ -506,6 +527,7 @@ namespace AdminProgram.ViewModels
             }
             catch (Exception)
             {
+                Hosts = new ObservableCollection<Host>();
                 return false;
             }
 

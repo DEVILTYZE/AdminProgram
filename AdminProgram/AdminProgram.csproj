@@ -4,6 +4,11 @@
         <OutputType>WinExe</OutputType>
         <TargetFramework>net5.0-windows</TargetFramework>
         <UseWPF>true</UseWPF>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+        <ApplicationManifest>app.manifest</ApplicationManifest>
     </PropertyGroup>
 
     <ItemGroup>
@@ -18,6 +23,9 @@
     <ItemGroup>
       <Compile Update="ViewModels\HostViewModel.Properties.cs">
         <DependentUpon>HostViewModel.cs</DependentUpon>
+      </Compile>
+      <Compile Update="ViewModels\RemoteViewModel.Properties.cs">
+        <DependentUpon>RemoteViewModel.cs</DependentUpon>
       </Compile>
     </ItemGroup>
 

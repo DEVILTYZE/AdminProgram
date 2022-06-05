@@ -32,3 +32,4 @@ E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\obj\Release\net5.
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\obj\Release\net5.0-windows\AdminProgramHost.genruntimeconfig.cache
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\obj\Release\net5.0-windows\AdminProgramHost.csproj.CopyComplete
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\bin\Release\net5.0-windows\SharpCompress.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgramHost\bin\Release\net5.0-windows\WindowsInput.dll

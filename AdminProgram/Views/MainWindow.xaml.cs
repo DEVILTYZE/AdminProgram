@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using AdminProgram.Models;
 using AdminProgram.ViewModels;
 using CommandLib;
 
@@ -14,9 +16,9 @@ namespace AdminProgram.Views
     public partial class MainWindow
     {
         private readonly HostViewModel _model;
-        private readonly Style _searchEmpty = Application.Current.FindResource("SearchEmpty") as Style;
-        private readonly Style _searchNotEmpty = new()
-            { Setters = { new Setter { Property = ContentProperty, Value = string.Empty } } };
+        // private readonly Style _searchEmpty = Application.Current.FindResource("SearchEmpty") as Style;
+        // private readonly Style _searchNotEmpty = new()
+        //     { Setters = { new Setter { Property = ContentProperty, Value = string.Empty } } };
 
         private Task _task;
         
@@ -36,15 +38,15 @@ namespace AdminProgram.Views
             _model = (HostViewModel)DataContext;
             Scan(_model);
         }
+        //
+        // private void SearchBox_OnTextChanged(object sender, TextChangedEventArgs e)
+        //     => SearchLabel.Style = SearchBox.Text.Length is 0 ? _searchEmpty : _searchNotEmpty;
 
-        private void SearchBox_OnTextChanged(object sender, TextChangedEventArgs e)
-            => SearchLabel.Style = SearchBox.Text.Length is 0 ? _searchEmpty : _searchNotEmpty;
-
-        private void SearchLabel_OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            if (e.ClickCount is 1)
-                Keyboard.Focus(((Label)sender).Target);
-        }
+        // private void SearchLabel_OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        // {
+        //     if (e.ClickCount is 1)
+        //         Keyboard.Focus(((Label)sender).Target);
+        // }
 
         private void ScanButton_OnClick(object sender, RoutedEventArgs e) => Scan(_model);
 
@@ -130,6 +132,36 @@ namespace AdminProgram.Views
                     
                     break;
             }
+        }
+
+        private void AddHostButton_OnClick(object sender, RoutedEventArgs e)
+        {
+            var host = new Host("1", "0.0.0.0", "00-00-00-00-00-00");
+            var addHostWindow = new AddHostWindow(ref host) { Owner = this };
+            addHostWindow.ShowDialog();
+            
+            if (host is not null)
+                _model.AddHost(host);
+        }
+
+        private void SearchBox_OnTextChanged(object sender, TextChangedEventArgs e)
+        {
+            var items = string.IsNullOrEmpty(SearchBox.Text)
+                ? _model.Hosts
+                : _model.Hosts.Where(host => host.ToString().ToLower().Contains(SearchBox.Text.ToLower()));
+            HostsBox.ItemsSource = items;
+        }
+
+        private void RemoveHostButton_OnClick(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show("Вы точно хотите удалить хост?", "Внимание", 
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes) 
+                return;
+            
+            _model.RemoveHost(_model.SelectedHost);
+            RightPanel.Visibility = Visibility.Hidden;
         }
     }
 }

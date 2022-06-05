@@ -110,3 +110,4 @@ E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\bin\Release\net5.0\runtimes\
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\bin\Release\net5.0\runtimes\unix\lib\netcoreapp3.1\System.Drawing.Common.dll
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\bin\Release\net5.0\runtimes\win\lib\netcoreapp3.1\System.Drawing.Common.dll
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\bin\Release\net5.0\SharpCompress.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\Tests\bin\Release\net5.0\WindowsInput.dll

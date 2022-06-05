@@ -2,6 +2,15 @@
   "version": 3,
   "targets": {
     "net5.0-windows7.0": {
+      "InputSimulator/1.0.4": {
+        "type": "package",
+        "compile": {
+          "lib/net20/WindowsInput.dll": {}
+        },
+        "runtime": {
+          "lib/net20/WindowsInput.dll": {}
+        }
+      },
       "Microsoft.NETCore.Platforms/1.1.0": {
         "type": "package",
         "compile": {
@@ -519,6 +528,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v5.0",
         "dependencies": {
+          "InputSimulator": "1.0.4",
           "SecurityChannel": "1.0.0",
           "SharpCompress": "0.31.0",
           "System.Drawing.Common": "6.0.0"
@@ -546,6 +556,19 @@
     }
   },
   "libraries": {
+    "InputSimulator/1.0.4": {
+      "sha512": "D0LvRCPQMX6/FJHBjng+RO+wRDuHTJrfo7IAc7rmkPvRqchdVGJWg3y70peOtDy3OLNK+HSOwVkH4GiuLnkKgA==",
+      "type": "package",
+      "path": "inputsimulator/1.0.4",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "inputsimulator.1.0.4.nupkg.sha512",
+        "inputsimulator.nuspec",
+        "lib/net20/WindowsInput.dll",
+        "lib/net20/WindowsInput.xml"
+      ]
+    },
     "Microsoft.NETCore.Platforms/1.1.0": {
       "sha512": "kz0PEW2lhqygehI/d6XsPCQzD7ff7gUJaVGPVETX611eadGsA3A877GdSlU0LRVMCTH/+P3o2iDTak+S08V2+A==",
       "type": "package",
@@ -2300,5 +2323,17 @@
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.402\\RuntimeIdentifierGraph.json"
       }
     }
-  }
+  },
+  "logs": [
+    {
+      "code": "NU1701",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'InputSimulator 1.0.4' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8' instead of the project target framework 'net5.0-windows7.0'. This package may not be fully compatible with your project.",
+      "libraryId": "InputSimulator",
+      "targetGraphs": [
+        "net5.0-windows7.0"
+      ]
+    }
+  ]
 }

@@ -43,3 +43,7 @@ E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Debug\net5.0-wind
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\obj\Debug\net5.0-windows\Views\RemoteWindow.g.cs
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\obj\Debug\net5.0-windows\Views\RemoteWindow.baml
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Debug\net5.0-windows\SharpCompress.dll
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\obj\Debug\net5.0-windows\Views\AddHostWindow.g.cs
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\obj\Debug\net5.0-windows\Views\AddHostWindow.baml
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\obj\Debug\net5.0-windows\Views\TextBoxPlaceholder.baml
+E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Debug\net5.0-windows\WindowsInput.dll

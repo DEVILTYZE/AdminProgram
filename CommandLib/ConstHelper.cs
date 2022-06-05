@@ -20,6 +20,7 @@ namespace CommandLib
         public const string FileLengthError = "Вес файла больше допустимого (150 МБ).";
 
         public const int SleepTimeout = 100;
+        public const int MaxDatagramCount = 30;
         
         public static readonly JsonSerializerOptions Options = new()
         {

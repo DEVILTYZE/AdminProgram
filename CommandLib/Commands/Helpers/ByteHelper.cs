@@ -9,36 +9,35 @@ namespace CommandLib.Commands.Helpers
 {
     public static class ByteHelper
     {
-        public static byte[] ImagesXOrDecompress(byte[] imageByteArray, byte[] imageByteArray2)
+        public static byte[] ImagesXOrDecompress(byte[] imageByteArray)
         {
-            imageByteArray = DecompressArray(imageByteArray);
+            return DecompressArray(imageByteArray);
 
-            if (imageByteArray2 is null)
-                return imageByteArray;
-            
-            var firstBigger = imageByteArray.Length > imageByteArray2.Length;
-            var bigArray = firstBigger ? imageByteArray : imageByteArray2;
-            var smallArray = firstBigger ? imageByteArray2 : imageByteArray;
-            
-            for (var i = 0; i < smallArray.Length; ++i)
-                bigArray[i] ^= smallArray[i];
-
-            return bigArray;
+            // if (imageByteArray2 is null)
+            //     return imageByteArray;
+            //
+            // var firstBigger = imageByteArray.Length > imageByteArray2.Length;
+            // var bigArray = firstBigger ? imageByteArray : imageByteArray2;
+            // var smallArray = firstBigger ? imageByteArray2 : imageByteArray;
+            //
+            // for (var i = 0; i < smallArray.Length; ++i)
+            //     bigArray[i] ^= smallArray[i];
+            //
+            // return bigArray;
         }
         
-        public static byte[] ImagesXOrCompress(byte[] imageByteArray, byte[] imageByteArray2)
+        public static byte[] ImagesXOrCompress(byte[] imageByteArray)
         {
-            if (imageByteArray2 is null)
-                return CompressArray(imageByteArray);
+            return CompressArray(imageByteArray);
 
-            var firstBigger = imageByteArray.Length > imageByteArray2.Length;
-            var bigArray = firstBigger ? imageByteArray : imageByteArray2;
-            var smallArray = firstBigger ? imageByteArray2 : imageByteArray;
-            
-            for (var i = 0; i < smallArray.Length; ++i)
-                bigArray[i] ^= smallArray[i];
-
-            return CompressArray(bigArray);
+            // var firstBigger = imageByteArray.Length > imageByteArray2.Length;
+            // var bigArray = firstBigger ? imageByteArray : imageByteArray2;
+            // var smallArray = firstBigger ? imageByteArray2 : imageByteArray;
+            //
+            // for (var i = 0; i < smallArray.Length; ++i)
+            //     bigArray[i] ^= smallArray[i];
+            //
+            // return CompressArray(bigArray);
         }
 
         public static byte[] ImageToBytes(Image image)
@@ -60,7 +59,7 @@ namespace CommandLib.Commands.Helpers
         {
             using var msInput = new MemoryStream(array);
             using var msOutput = new MemoryStream();
-            using var stream = new ZlibStream(msOutput, CompressionMode.Compress, CompressionLevel.Level5) 
+            using var stream = new ZlibStream(msOutput, CompressionMode.Compress, CompressionLevel.BestCompression) 
                 { FlushMode = FlushType.Sync };
             msInput.CopyTo(stream);
             msOutput.Position = 0;

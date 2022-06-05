@@ -10,8 +10,7 @@ namespace AdminProgram.Models
 {
     public sealed class Host : INotifyPropertyChanged
     {
-        private string _name, _ipAddress;
-        private readonly string _macAddress;
+        private string _name, _ipAddress, _macAddress;
         private HostStatus _status;
         private bool _isTransfers;
         private TcpListener _transferServer;
@@ -51,7 +50,7 @@ namespace AdminProgram.Models
         public string MacAddress
         {
             get => _macAddress;
-            init
+            set
             {
                 if (string.IsNullOrEmpty(value) || string.IsNullOrWhiteSpace(value))
                     throw new ArgumentNullException(value, "Value is null");

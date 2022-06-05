@@ -10,11 +10,11 @@ none
 false
 TRACE;DEBUG;NET;NET5_0;NETCOREAPP
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\App.xaml
-21013393457
+41456496749
 
-21-1466892062
-200-1575689393
-Views\MainWindow.xaml;Views\RemoteWindow.xaml;
+251818919094
+201-550720153
+Views\AddHostWindow.xaml;Views\MainWindow.xaml;Views\RemoteWindow.xaml;Views\TextBoxPlaceholder.xaml;
 
 False
 

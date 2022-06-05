@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -20,7 +19,6 @@ namespace AdminService
         {
             NetHelper.AddFirewallRules("AdminService", "TCP", true, true);
             NetHelper.AddFirewallRules("AdminService", "UDP", true, true);
-            _name = Dns.GetHostName();
             _savedCommands = new List<ICommand>();
 
             using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0);
@@ -28,15 +26,12 @@ namespace AdminService
 
             if (socket.LocalEndPoint is IPEndPoint endPoint)
                 _ipAddress = endPoint.Address.ToString();
-
-            _macAddress = NetHelper.GetMacAddress();
         }
 
         public void StartClientSession()
         {
             AreRunningTasks = true;
             _forceClose = false;
-            _restart = false;
 
             _servers = new List<TcpListener>();
             Task.Run(() => OpenClient(NetHelper.CommandPort));
@@ -57,51 +52,7 @@ namespace AdminService
 
             foreach (var command in _savedCommands)
                 command.Abort();
-
-            if (!_restart)
-            {
-                //ExportLogs(Logs);
-                return;
-            }
-            
-            //ExportLogs(Logs);
-            var path = ProgramName;
-            
-            if (string.IsNullOrEmpty(path))
-                return;
-            
-            Process.Start(path);
         }
-
-        // public bool SetAutorunValue(bool isAutorun)
-        // {
-        //     var path = ProgramName;
-        //
-        //     if (string.IsNullOrEmpty(path))
-        //         return false;
-        //     
-        //     // var regCurrentUser = Registry.CurrentUser.CreateSubKey(
-        //     //     @"Software\Microsoft\Windows\CurrentVersion\Run\");
-        //     const string keyInfo = @"Software\Microsoft\Windows\CurrentVersion\Run\";
-        //     var regLocalMachine = Registry.LocalMachine.CreateSubKey(keyInfo);
-        //
-        //     if (regLocalMachine is null)
-        //         return false;
-        //
-        //     try
-        //     {
-        //         if (isAutorun)
-        //             regLocalMachine.SetValue(_name + "Program", path);
-        //         else
-        //             regLocalMachine.DeleteValue(_name + "Program");
-        //     }
-        //     catch
-        //     {
-        //         return false;
-        //     }
-        //
-        //     return true;
-        // }
 
         /// <summary>
         /// Метод включения клиента в режим прослушки сети.
@@ -156,10 +107,7 @@ namespace AdminService
             }
             catch (SocketException)
             {
-                lock(_locker)
-                {
-                    _restart &= !_forceClose;
-                }
+                // ignored
             }
             catch (Exception)
             {
@@ -216,42 +164,5 @@ namespace AdminService
                     _savedCommands.Add(command);
                 }
         }
-
-        // private IPEndPoint GetEndPoint(int port)
-        // {
-        //     var arpProcess = Process.Start(new ProcessStartInfo("arp", "-a")
-        //     {
-        //         StandardOutputEncoding = Encoding.UTF8,
-        //         UseShellExecute = false,
-        //         RedirectStandardOutput = true,
-        //         CreateNoWindow = true
-        //     });
-        //     
-        //     var cmdOutput = arpProcess?.StandardOutput.ReadToEnd();
-        //
-        //     if (string.IsNullOrEmpty(cmdOutput))
-        //         return new IPEndPoint(IPAddress.Any, port);
-        //     
-        //     var pattern = @"(\d{0,3}\.){3}\d{0,3}\.+" + _adminMacAddress;
-        //     Match match;
-        //     
-        //     do match = Regex.Match(cmdOutput, pattern, RegexOptions.IgnoreCase);
-        //     while (match.Value.EndsWith("255"));
-        //
-        //     var ip = string.IsNullOrEmpty(match.Value) ? IpAddress : match.Value;
-        //
-        //     return new IPEndPoint(IPAddress.Parse(ip), port);
-        // }
-
-        // private static void ExportLogs(string logs)
-        // {
-        //     var dirName = new FileInfo(LogsPath).DirectoryName ?? Environment.CurrentDirectory + "\\logs";
-        //
-        //     if (!Directory.Exists(dirName))
-        //         Directory.CreateDirectory(dirName);
-        //     
-        //     using var sw = new StreamWriter(LogsPath);
-        //     sw.Write(logs);
-        // }
     }
 }

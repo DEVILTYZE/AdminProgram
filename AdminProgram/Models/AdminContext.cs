@@ -8,8 +8,7 @@ namespace AdminProgram.Models
 
         public AdminContext() : base("DefaultConnection")
         {
-            if (!Database.Exists())
-                Database.Create();
+            Database.CreateIfNotExists();
         }
     }
 }

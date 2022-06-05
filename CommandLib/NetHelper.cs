@@ -36,8 +36,8 @@ namespace CommandLib
         public const int RemoteCommandPort = 52020; // TCP
         public const int TransferPort = 49500; // TCP
         public const int TransferCommandPort = 49510; // TCP
-        public const int Timeout = 50000;
-        public const int LoadTimeout = 17000;
+        public const int Timeout = 2500;
+        public const int LoadTimeout = 20000;
         public const int MaxFileLength = 157286400; // 150 MB
 
         public static byte[] GetMagicPacket(string mac)
@@ -139,7 +139,7 @@ namespace CommandLib
 
         public static bool AddFirewallRules(string programName, string protocol, bool isService, bool isEnabled)
         {
-            if (RuleExists(programName))
+            if (RuleExists(programName, protocol))
                 return true;
             
             var path = Directory.GetFiles(Environment.CurrentDirectory, "*.exe", 
@@ -355,7 +355,7 @@ namespace CommandLib
             return !string.IsNullOrEmpty(responseString);
         }
 
-        private static bool RuleExists(string ruleName)
+        private static bool RuleExists(string ruleName, string protocol)
         {
             var arguments = $"advfirewall firewall show rule name=\"{ruleName}\"";
             var result = Process.Start(new ProcessStartInfo(@"C:\Windows\System32\netsh.exe", arguments)
@@ -366,7 +366,7 @@ namespace CommandLib
             });
             var output = result?.StandardOutput.ReadToEnd();
 
-            return !string.IsNullOrEmpty(output) && output.Contains(ruleName);
+            return !string.IsNullOrEmpty(output) && output.Contains(ruleName) && output.Contains(protocol);
         }
     }
 }

@@ -7,7 +7,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using CommandLib.Annotations;
 using CommandLib.Commands.Helpers;
@@ -18,11 +17,9 @@ namespace CommandLib.Commands.RemoteCommandItems
     [Serializable]
     public class RemoteCommand : AbstractCommand
     {
-        private const int MaxSentDatagrams = 50;
-        private static readonly Size LowQualitySize = new(1400, 950);
+        private static readonly Size LowQualitySize = new(1300, 900);
         
         private bool _isActive;
-        private byte[] _currentImage;
         private RSAParameters[] _keys;
         private UdpClient _udpClient;
 
@@ -46,7 +43,6 @@ namespace CommandLib.Commands.RemoteCommandItems
             }
 
             Task.Run(() => StartRemoteConnection(remoteIp));
-            Task.Run(RemoteControl);
             var size = DisplayTools.GetPhysicalDisplaySize();
 
             return new CommandResult(CommandResultStatus.Successed, 
@@ -56,7 +52,7 @@ namespace CommandLib.Commands.RemoteCommandItems
         public override void Abort()
         {
             _isActive = false;
-            _udpClient.Close();
+            _udpClient?.Close();
         }
 
         private void StartRemoteConnection([CanBeNull] object obj)
@@ -72,7 +68,7 @@ namespace CommandLib.Commands.RemoteCommandItems
                 client = new UdpClient();
                 KeySwap(remoteIp.Address.ToString(), NetHelper.KeysPort);
                 var size = DisplayTools.GetPhysicalDisplaySize();
-                var resendScreenCount = 0;
+                Task.Run(RemoteControl);
 
                 while (_isActive)
                 {
@@ -81,15 +77,8 @@ namespace CommandLib.Commands.RemoteCommandItems
                     graphics.CopyFromScreen(0, 0, 0, 0, size);
                     image = ReduceQuality(image);
 
-                    if (resendScreenCount == MaxSentDatagrams)
-                    {
-                        _currentImage = null;
-                        resendScreenCount = 0;
-                    }
-
                     var bytesImage = ByteHelper.ImageToBytes(image);
-                    var data = ByteHelper.ImagesXOrCompress((byte[])bytesImage.Clone(), _currentImage);
-                    _currentImage = bytesImage;
+                    var data = ByteHelper.ImagesXOrCompress((byte[])bytesImage.Clone());
 
                     if (data.Length == 0)
                         continue;
@@ -107,18 +96,14 @@ namespace CommandLib.Commands.RemoteCommandItems
 
                     foreach (var byteArray in listBytes)
                         client.Send(byteArray, byteArray.Length, remoteIp.Address.ToString(), remoteIp.Port);
-
-                    ++resendScreenCount;
-                    Thread.Sleep(20);
                 }
             }
             catch (SocketException)
             {
-                _isActive = false;
-                _udpClient?.Close();
             }
             finally
             {
+                Abort();
                 client?.Close();
             }
         }
@@ -130,10 +115,16 @@ namespace CommandLib.Commands.RemoteCommandItems
             try
             {
                 _udpClient = new UdpClient(NetHelper.RemoteControlPort);
-                var bytes = _udpClient.Receive(ref remoteIp);
-                var datagram = Datagram.FromBytes(bytes);
-                var remoteControl = RemoteControlObject.FromBytes(datagram.GetData(_keys[0]));
-                // TODO: CONTROL>>>
+                RemoteControlObject remoteControl = null;
+
+                while (_isActive)
+                {
+                    var bytes = _udpClient.Receive(ref remoteIp);
+                    var datagram = Datagram.FromBytes(bytes);
+                    var lastState = remoteControl;
+                    remoteControl = RemoteControlObject.FromBytes(datagram.GetData(_keys[0]));
+                    InputHelper.SendInput(remoteControl, lastState);
+                }
             }
             catch (SocketException)
             {

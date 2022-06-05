@@ -8,7 +8,6 @@ namespace CommandLib.Commands.Helpers
     [Serializable]
     public enum CommandResultStatus
     {
-        Unknown = 0,
         Successed = 1,
         Failed = -1
     }

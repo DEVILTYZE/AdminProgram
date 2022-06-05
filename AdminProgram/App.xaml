@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:AdminProgram"
              xmlns:converters="clr-namespace:AdminProgram.Converters"
+             xmlns:helpers="clr-namespace:AdminProgram.Helpers"
              StartupUri="Views/MainWindow.xaml">
     <Application.Resources>
         <!-- Colors -->
@@ -22,6 +23,7 @@
         <converters:StatusPowerBoolConverter x:Key="StatusBoolPower" />
         <converters:StatusBoolConverter x:Key="StatusBool" />
         <converters:OppositeBoolConverter x:Key="OppositeBool" />
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
         <!-- Main -->
         <Style x:Key="Font">
             <Setter Property="Control.FontSize" Value="20" />
@@ -57,7 +59,7 @@
             <Setter Property="TextBox.Background" Value="{StaticResource FlowerWhite}" />
             <Setter Property="TextBox.Foreground" Value="{StaticResource BeforeDark}" />
             <Setter Property="TextBox.Padding" Value="5" />
-            <Setter Property="TextBox.Margin" Value="5" />
+            <Setter Property="TextBox.Margin" Value="10" />
             <Setter Property="TextBox.BorderThickness" Value="1" />
             <Setter Property="TextBox.HorizontalAlignment" Value="Left" />
             <Setter Property="TextBox.VerticalAlignment" Value="Center" />
@@ -67,7 +69,6 @@
             <Setter Property="TextBox.VerticalScrollBarVisibility" Value="Disabled" />
             <Setter Property="TextBox.MaxLength" Value="50" />
             <Setter Property="TextBox.Width" Value="600" />
-            <Setter Property="TextBox.Margin" Value="10" />
         </Style>
         <Style x:Key="SearchEmpty" BasedOn="{StaticResource Font}">
             <Setter Property="Label.Foreground" Value="{StaticResource BeforeDark}" />

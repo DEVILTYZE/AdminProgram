@@ -56,7 +56,19 @@ namespace CommandLib
 
         public byte[] ToBytes() => JsonSerializer.SerializeToUtf8Bytes(this, _options);
 
-        public static Datagram FromBytes(byte[] data) 
+        public static Datagram FromBytes(byte[] data)
             => (Datagram)JsonSerializer.Deserialize(data, typeof(Datagram), _options);
+        
+        public static Datagram FromBytesOrDefault(byte[] data)
+        {
+            try
+            {
+                return FromBytes(data);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
     }
 }

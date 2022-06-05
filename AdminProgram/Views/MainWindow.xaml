@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AdminProgram"
         xmlns:viewModels="clr-namespace:AdminProgram.ViewModels"
+        xmlns:helpers="clr-namespace:AdminProgram.Helpers"
         mc:Ignorable="d"
         Title="MainWindow" MinHeight="550" MinWidth="1000" Height="800" Width="1500"
         KeyDown="MainWindow_OnKeyDown"
@@ -29,15 +30,20 @@
             <ColumnDefinition />
             <ColumnDefinition />
             <ColumnDefinition />
+            <ColumnDefinition />
         </Grid.ColumnDefinitions>
-        <Button x:Name="ScanButton"
+        <Button x:Name="AddHostButton" 
+                Content="Добавить хост"
+                Click="AddHostButton_OnClick"/>
+        <Button Grid.Row="0" Grid.Column="1" 
+                x:Name="ScanButton"
                 Style="{StaticResource {x:Type Button}}"
                 Content="{Binding ScanTasks.IsAlive, 
                 Converter={StaticResource ScanButtonText}}"
                 IsEnabled="{Binding ScanTasks.IsAlive, 
                 Converter={StaticResource OppositeBool}}"
                 Click="ScanButton_OnClick"/>
-        <Button Grid.Row="0" Grid.Column="1" 
+        <Button Grid.Row="0" Grid.Column="2" 
                 x:Name="RefreshAllButton"
                 Style="{StaticResource {x:Type Button}}"
                 Content="{Binding RefreshTasks.IsAlive, 
@@ -45,17 +51,24 @@
                 IsEnabled="{Binding RefreshTasks.IsAlive, 
                 Converter={StaticResource OppositeBool}}"
                 Click="RefreshAllButton_OnClick"/>
-        <TextBox Grid.Row="0" Grid.Column="2" 
-                 x:Name="SearchBox" 
+        <!-- <helpers:TextBoxPlaceholder Grid.Row="0" Grid.Column="3" -->
+        <!--                             x:Name="SearchBox"  -->
+        <!--                             Height="75" -->
+        <!--                             Width="400" -->
+        <!--                             Placeholder="Поиск" -->
+        <!--                             KeyDown="SearchBox_OnKeyDown"/> -->
+        <TextBox Grid.Row="0" Grid.Column="3"
+                 x:Name="SearchBox"
                  Style="{StaticResource SearchBox}"
                  TextChanged="SearchBox_OnTextChanged" />
-        <Label Grid.Row="0" Grid.Column="2" 
-               x:Name="SearchLabel"
-               Target="{x:Reference SearchBox}"
-               Style="{StaticResource SearchEmpty}"
-               Cursor="IBeam"
-               MouseLeftButtonUp="SearchLabel_OnMouseLeftButtonUp" />
-        <ListBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" 
+        <!-- <Label Grid.Row="0" Grid.Column="3"  -->
+        <!--        x:Name="SearchLabel" -->
+        <!--        Target="{x:Reference SearchBox}" -->
+        <!--        Style="{StaticResource SearchEmpty}" -->
+        <!--        Cursor="IBeam" -->
+        <!--        MouseLeftButtonUp="SearchLabel_OnMouseLeftButtonUp" /> -->
+        <ListBox x:Name="HostsBox"
+                 Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" 
                  ItemsSource="{Binding Hosts}" 
                  SelectedItem="{Binding SelectedHost}"
                  Style="{StaticResource Window}"
@@ -75,8 +88,8 @@
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
-        <StackPanel x:Name="RightPanel" 
-                    Grid.Row="1" Grid.Column="2" 
+        <StackPanel Grid.Row="1" Grid.Column="3"
+                    x:Name="RightPanel" 
                     Style="{StaticResource RightPanel}"
                     MinHeight="400" MinWidth="100">
             <TextBlock Style="{StaticResource HostPanel}" 
@@ -105,6 +118,7 @@
                     IsEnabled="{Binding SelectedHost.Status, 
                     Converter={StaticResource StatusBoolPower}}"
                     Click="RefreshButton_OnClick"/>
+            <Button x:Name="RemoveHostButton" Content="Удалить хост" Click="RemoveHostButton_OnClick" />
             <StackPanel IsEnabled="{Binding SelectedHost.Status, 
                         Converter={StaticResource StatusBool}}">
                 <!-- IsEnabled="{Binding SelectedHost.Status,  -->
@@ -113,7 +127,9 @@
                         Style="{StaticResource {x:Type Button}}" 
                         Content="Удалённое управление"
                         Click="RemoteButton_OnClick"/>
-                <TextBox Text="{Binding TransferMessage}"/>
+                <TextBox Style="{StaticResource TextBox}" 
+                         Text="{Binding TransferMessage}"
+                         Width="600"/>
                 <Button Content="{Binding SelectedHost.IsTransfers, 
                         Converter={StaticResource TransferButtonText}}"
                         Click="TransferButton_OnClick"/>
