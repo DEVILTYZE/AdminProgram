@@ -78,7 +78,7 @@ namespace CommandLib.Commands.RemoteCommandItems
                     image = ReduceQuality(image);
 
                     var bytesImage = ByteHelper.ImageToBytes(image);
-                    var data = ByteHelper.ImagesXOrCompress((byte[])bytesImage.Clone());
+                    var data = ByteHelper.CompressArray((byte[])bytesImage);
 
                     if (data.Length == 0)
                         continue;

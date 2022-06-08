@@ -3,39 +3,32 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:local="clr-namespace:AdminProgram.Views"
-        xmlns:helpers="clr-namespace:AdminProgram.Helpers"
         mc:Ignorable="d"
-        Title="AddHostWindow" 
-        Height="500" Width="400"
-        ResizeMode="NoResize"
-        Closing="AddHostWindow_OnClosing">
+        Title="Admin Program (добавление хоста)" 
+        Width="400" Height="315"
+        ResizeMode="NoResize">
     <Grid Style="{StaticResource Window}">
-        <Grid.RowDefinitions>
-            <RowDefinition />
-            <RowDefinition />
-            <RowDefinition />
-            <RowDefinition />
-        </Grid.RowDefinitions>
-        <Label Style="{StaticResource Font}" 
-               HorizontalAlignment="Center" 
-               Content="Хотите добавить хост?" />
-        <TextBox Grid.Row="1"
-                 x:Name="MacAddressBox"
-                 Style="{StaticResource TextBox}"
-                 Width="380" />
-        <TextBox Grid.Row="2"
-                 x:Name="IpAddressBox"
-                 Style="{StaticResource TextBox}"
-                 Width="380" />
-        <!-- <helpers:TextBoxPlaceholder Grid.Row="1"  -->
-        <!--                             x:Name="MacAddressBox" -->
-        <!--                             HorizontalAlignment="Center"  -->
-        <!--                             Placeholder="MAC-адрес..." /> -->
-        <!-- <helpers:TextBoxPlaceholder Grid.Row="2" -->
-        <!--                             x:Name="IpAddressBox" -->
-        <!--                             HorizontalAlignment="Center"  -->
-        <!--                             Placeholder="IP-адрес... (опционально)" /> -->
-        <Button Grid.Row="3" Height="50" Content="Добавить хост" Click="AddHostButton_OnClick" />
+        <StackPanel>
+            <Label Style="{StaticResource FontSmall}" 
+                   HorizontalAlignment="Center" 
+                   Content="Хотите добавить хост?" />
+            <Label Style="{StaticResource FontSmall}" 
+                   HorizontalAlignment="Left"
+                   Margin="5 0 0 0"
+                   Content="MAC-адрес:" 
+                   Target="{x:Reference MacAddressBox}" />
+            <TextBox x:Name="MacAddressBox"
+                     Style="{StaticResource TextBox}"
+                     HorizontalAlignment="Stretch" />
+            <Label Style="{StaticResource FontSmall}" 
+                   HorizontalAlignment="Left"
+                   Margin="5 0 0 0"
+                   Content="IP-адрес (опционально):" 
+                   Target="{x:Reference IpAddressBox}" />
+            <TextBox x:Name="IpAddressBox"
+                     Style="{StaticResource TextBox}"
+                     HorizontalAlignment="Stretch" />
+            <Button Height="50" Content="Добавить хост" Click="AddHostButton_OnClick" />
+        </StackPanel>
     </Grid>
 </Window>

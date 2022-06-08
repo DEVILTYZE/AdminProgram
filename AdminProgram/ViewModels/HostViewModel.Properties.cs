@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Net;
 using System.Runtime.CompilerServices;
 using AdminProgram.Annotations;
+using AdminProgram.Helpers;
 using AdminProgram.Models;
 using CommandLib;
 
@@ -17,12 +17,12 @@ namespace AdminProgram.ViewModels
         private readonly IPHostEntry _currentHost;
         private readonly string _filesDirectory = Environment.CurrentDirectory + "\\admin_transferred_files\\";
         
-        private Dictionary<string, string> _addresses;
         private Host _selectedHost;
         private string _transferMessage;
         private AdminContext _db;
         private readonly bool _hasDataBase;
         private readonly TaskList _transferTasks;
+        private LogViewModel _logModel;
 
         private IPAddress CurrentIpAddress => _currentHost.AddressList.First(NetHelper.IsInLocalNetwork);
 
@@ -47,6 +47,16 @@ namespace AdminProgram.ViewModels
             {
                 _transferMessage = value;
                 OnPropertyChanged(nameof(TransferMessage));
+            }
+        }
+        
+        public LogViewModel LogModel
+        {
+            get => _logModel;
+            set
+            {
+                _logModel = value;
+                OnPropertyChanged(nameof(LogModel));
             }
         }
         

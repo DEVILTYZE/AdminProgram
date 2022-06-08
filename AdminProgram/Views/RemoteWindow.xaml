@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:AdminProgram.Views"
         xmlns:viewModels="clr-namespace:AdminProgram.ViewModels"
         mc:Ignorable="d"
-        Title="RemoteWindow" 
+        Title="Admin Program (удалённое подключение)" 
         Height="{Binding Height}" 
         Width="{Binding Width}"
         MinHeight="500"

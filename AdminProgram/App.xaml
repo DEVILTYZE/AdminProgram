@@ -1,18 +1,9 @@
 ﻿<Application x:Class="AdminProgram.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:AdminProgram"
              xmlns:converters="clr-namespace:AdminProgram.Converters"
-             xmlns:helpers="clr-namespace:AdminProgram.Helpers"
              StartupUri="Views/MainWindow.xaml">
     <Application.Resources>
-        <!-- Colors -->
-        <SolidColorBrush x:Key="LightWhite">#D7D7D7</SolidColorBrush>
-        <SolidColorBrush x:Key="GhostWhite">#9DA1AA</SolidColorBrush>
-        <SolidColorBrush x:Key="FlowerWhite">#E6E6FA</SolidColorBrush>
-        <SolidColorBrush x:Key="SmokeWhite">#F5F5F5</SolidColorBrush>
-        <SolidColorBrush x:Key="BeforeDark">#131313</SolidColorBrush>
-        <SolidColorBrush x:Key="Gray">#A0A0A4</SolidColorBrush>
         <!-- Converters -->
         <converters:EllipseColorConverter x:Key="EllipseColor" />
         <converters:StatusTextConverter x:Key="StatusText" />
@@ -20,7 +11,8 @@
         <converters:ScanButtonTextConverter x:Key="ScanButtonText" />
         <converters:RefreshButtonTextConverter x:Key="RefreshButtonText" />
         <converters:TransferButtonTextConverter x:Key="TransferButtonText" />
-        <converters:StatusPowerBoolConverter x:Key="StatusBoolPower" />
+        <converters:StatusPowerBoolConverter x:Key="StatusPowerBool" />
+        <converters:StatusRefreshBoolConverter x:Key="StatusRefreshBool" />
         <converters:StatusBoolConverter x:Key="StatusBool" />
         <converters:OppositeBoolConverter x:Key="OppositeBool" />
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
@@ -31,9 +23,12 @@
             <Setter Property="Control.FontFamily" Value="Arial, Sans-serif" />
             <Setter Property="Control.FontStretch" Value="Normal" />
         </Style>
+        <Style x:Key="FontSmall" BasedOn="{StaticResource Font}">
+            <Setter Property="Control.FontSize" Value="16" />
+        </Style>
         <Style x:Key="Window" BasedOn="{StaticResource Font}">
-            <Setter Property="Control.Background" Value="{StaticResource LightWhite}" />
-            <Setter Property="Control.Foreground" Value="{StaticResource BeforeDark}" />
+            <Setter Property="Control.Background" Value="White" />
+            <Setter Property="Control.Foreground" Value="Black" />
         </Style>
         <Style x:Key="HostPanel" BasedOn="{StaticResource Window}">
             <Setter Property="TextBlock.Margin" Value="10" />
@@ -49,39 +44,29 @@
             <Setter Property="HorizontalAlignment" Value="Center" />
         </Style>
         <Style x:Key="RightPanel" BasedOn="{StaticResource Window}">
-            <Setter Property="StackPanel.Background" Value="{StaticResource GhostWhite}" />
+            <Setter Property="StackPanel.Background" Value="WhiteSmoke" />
             <Setter Property="StackPanel.Margin" Value="10" />
             <Setter Property="StackPanel.Visibility" Value="Collapsed" />
             <Setter Property="Control.BorderThickness" Value="1" />
         </Style>
         <!-- Texts -->
         <Style x:Key="TextBox" BasedOn="{StaticResource Font}">
-            <Setter Property="TextBox.Background" Value="{StaticResource FlowerWhite}" />
-            <Setter Property="TextBox.Foreground" Value="{StaticResource BeforeDark}" />
+            <Setter Property="TextBox.Background" Value="AliceBlue" />
+            <Setter Property="TextBox.Foreground" Value="Black" />
             <Setter Property="TextBox.Padding" Value="5" />
             <Setter Property="TextBox.Margin" Value="10" />
             <Setter Property="TextBox.BorderThickness" Value="1" />
             <Setter Property="TextBox.HorizontalAlignment" Value="Left" />
             <Setter Property="TextBox.VerticalAlignment" Value="Center" />
+            <Setter Property="Border.CornerRadius" Value="5" />
         </Style>
         <Style x:Key="SearchBox" BasedOn="{StaticResource TextBox}">
-            <Setter Property="TextBox.HorizontalScrollBarVisibility" Value="Disabled" />
             <Setter Property="TextBox.VerticalScrollBarVisibility" Value="Disabled" />
             <Setter Property="TextBox.MaxLength" Value="50" />
-            <Setter Property="TextBox.Width" Value="600" />
-        </Style>
-        <Style x:Key="SearchEmpty" BasedOn="{StaticResource Font}">
-            <Setter Property="Label.Foreground" Value="{StaticResource BeforeDark}" />
-            <Setter Property="Label.FontStyle" Value="Italic" />
-            <Setter Property="Label.Content" Value="Поиск..." />
-            <Setter Property="Control.Padding" Value="5" />
-            <Setter Property="Control.Margin" Value="15" />
-            <Setter Property="TextBox.HorizontalAlignment" Value="Left" />
-            <Setter Property="TextBox.VerticalAlignment" Value="Center" />
         </Style>
         <!-- Buttons -->
         <Style TargetType="Button" BasedOn="{StaticResource Window}">
-            <Setter Property="Background" Value="{StaticResource Gray}" />
+            <Setter Property="Background" Value="AliceBlue" />
             <Setter Property="Margin" Value="10" />
         </Style>
     </Application.Resources>

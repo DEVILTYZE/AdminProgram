@@ -17,10 +17,11 @@ namespace AdminProgram.ViewModels
 {
     public sealed partial class RemoteViewModel 
     {
-        public RemoteViewModel(Host host, IPEndPoint ourIpEndPoint) : this()
+        public RemoteViewModel(Host host, IPEndPoint ourIpEndPoint, LogViewModel logModel) : this()
         {
             Host = host;
             _ourIpEndPoint = ourIpEndPoint;
+            _logModel = logModel;
         }
 
         public RemoteViewModel()
@@ -32,6 +33,9 @@ namespace AdminProgram.ViewModels
 
         public void StartRemoteConnection()
         {
+            lock (_logModel.Locker)
+                _logModel.AddLog($"{_host.IpAddress} старт удалённого подключения.", LogStatus.Info);
+            
             Reconnect = false;
             IsAliveRemoteConnection = true;
             Task.Run(Stream);
@@ -73,6 +77,10 @@ namespace AdminProgram.ViewModels
             }
             catch (SocketException)
             {
+                lock (_logModel.Locker)
+                    _logModel.AddLog($"При закрытии удалённого подключения {_host.IpAddress} получена ошибка сокета.",
+                        LogStatus.Error);
+                
                 return true;
             }
             finally
@@ -122,6 +130,11 @@ namespace AdminProgram.ViewModels
                 if (result.Status == CommandResultStatus.Failed)
                 {
                     IsAliveRemoteConnection = false;
+                    
+                    lock (_logModel.Locker)
+                        _logModel.AddLog($"Не удалось установить удалённое подключение с {_host.IpAddress}",
+                            LogStatus.Error);
+                    
                     return;
                 }
 
@@ -139,11 +152,8 @@ namespace AdminProgram.ViewModels
                     var countOfBlocks = bytes[0];
                     bytes = bytes[1..]; // 1 — количество блоков, 4 — длина, 4 — ширина.
 
-                    if (countOfBlocks >= 20) // Переподключение, если слишком много блоков.
-                    {
-                        Reconnect = true;
-                        break;
-                    }
+                    if (countOfBlocks >= 5) // Переподключение, если слишком много блоков.
+                        continue;
 
                     for (var i = 0; i < countOfBlocks - 1; ++i)
                         bytes = bytes.Concat(_udpClient.Receive(ref remoteIp)).ToArray();
@@ -155,7 +165,15 @@ namespace AdminProgram.ViewModels
                         ++nullCount;
                         
                         if (nullCount == 30)
+                        {
+                            Reconnect = true;
+                            
+                            lock (_logModel.Locker)
+                                _logModel.AddLog($"Подключение с {_host.IpAddress} разорвано из-за слишком " +
+                                                 $"большого количества потерянных датаграмм.", LogStatus.Error);
+                            
                             break;
+                        }
                         
                         continue;
                     }
@@ -167,12 +185,13 @@ namespace AdminProgram.ViewModels
                     {
                         try
                         {
-                            var image = ByteHelper.BytesToImage(ByteHelper.ImagesXOrDecompress(data));
+                            var image = ByteHelper.BytesToImage(ByteHelper.DecompressArray(data));
                             ImageScreen = BitmapImageHelper.BitmapToBitmapImage(image);
                         }
                         catch (Exception)
                         {
-                            // ignored
+                            lock (_logModel.Locker)
+                                _logModel.AddLog("Ошибка при декодировании изображения", LogStatus.Error);
                         }
                     });
                 }
@@ -181,16 +200,23 @@ namespace AdminProgram.ViewModels
             {
                 Reconnect = false;
                 IsAliveRemoteConnection = false;
+                
+                lock (_logModel.Locker)
+                    _logModel.AddLog($"При удалённом подключении к {_host.IpAddress} возникла утечка памяти.",
+                        LogStatus.Error);
             }
             catch (SocketException)
             {
+                lock (_logModel.Locker)
+                    _logModel.AddLog($"При удалённом подключении {_host.IpAddress} получена ошибка сокета.", 
+                        LogStatus.Error);
             }
             finally
             {
                 tcpClient?.Close();
                 
                 if (IsAliveRemoteConnection)
-                    Task.Run(Refresh);
+                    Task.Run(RefreshConnection);
             }
         }
 
@@ -215,6 +241,10 @@ namespace AdminProgram.ViewModels
             {
                 IsAliveRemoteConnection = false;
                 _udpClient?.Close();
+                
+                lock (_logModel.Locker)
+                    _logModel.AddLog($"При удалённом управлении {_host.IpAddress} получена ошибка сокета.", 
+                        LogStatus.Error);
             }
             finally
             {
@@ -222,8 +252,11 @@ namespace AdminProgram.ViewModels
             }
         }
 
-        private void Refresh()
+        private void RefreshConnection()
         {
+            lock (_logModel.Locker)
+                _logModel.AddLog($"Переподключение к {_host.IpAddress}.", LogStatus.Info);
+            
             CloseRemoteConnection();
             StartRemoteConnection();
         }
@@ -254,6 +287,10 @@ namespace AdminProgram.ViewModels
             catch (SocketException)
             {
                 IsAliveRemoteConnection = false;
+                
+                lock (_logModel.Locker)
+                    _logModel.AddLog($"При обмене ключами {_host.IpAddress} получена ошибка сокета.", 
+                        LogStatus.Error);
             }
             finally
             {

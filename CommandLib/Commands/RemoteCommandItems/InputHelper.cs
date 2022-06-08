@@ -60,18 +60,18 @@ namespace CommandLib.Commands.RemoteCommandItems
                 }
             }
             
-            Simulator.Mouse.VerticalScroll(controlObject.Delta);
+            Simulator.Mouse.VerticalScroll(controlObject.Delta / 32);
 
-            foreach (var (key, state) in controlObject.Keys)
+            for (var i = 0; i < controlObject.States.Length; ++i)
             {
-                switch (state)
+                switch (controlObject.States[i])
                 {
                     case 1:
-                        Simulator.Keyboard.KeyDown((VirtualKeyCode)key);
+                        Simulator.Keyboard.KeyDown((VirtualKeyCode)controlObject.Keys[i]);
                         break;
                     case 2:
                     case 3:
-                        Simulator.Keyboard.KeyPress((VirtualKeyCode)key);
+                        Simulator.Keyboard.KeyPress((VirtualKeyCode)controlObject.Keys[i]);
                         break;
                 }
             }

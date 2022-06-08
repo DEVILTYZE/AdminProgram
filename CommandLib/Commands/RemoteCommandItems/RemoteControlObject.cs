@@ -15,20 +15,25 @@ namespace CommandLib.Commands.RemoteCommandItems
         public byte LeftButtonClickCount { get; set; }
         public bool LeftButtonIsPressed { get; set; }
         public int Delta { get; set; }
-        public (byte, byte)[] Keys { get; set; }
+        public byte[] Keys { get; set; }
+        public byte[] States { get; set; }
         
         [JsonIgnore]
-        public Queue<(byte, byte)> KeysQueue { get; set; }
+        public Queue<byte> KeysQueue { get; set; }
+        [JsonIgnore]
+        public Queue<byte> StatesQueue { get; set; }
 
         [JsonConstructor]
         public RemoteControlObject()
         {
-            KeysQueue = new Queue<(byte, byte)>();
+            KeysQueue = new Queue<byte>();
+            StatesQueue = new Queue<byte>();
         }
 
         public void ToStartCondition()
         {
             KeysQueue.Clear();
+            StatesQueue.Clear();
             Delta = 0;
             LeftButtonClickCount = 0;
             RightButtonClickCount = 0;
@@ -37,6 +42,7 @@ namespace CommandLib.Commands.RemoteCommandItems
         public byte[] ToBytes()
         {
             Keys = KeysQueue.ToArray();
+            States = StatesQueue.ToArray();
             
             return JsonSerializer.SerializeToUtf8Bytes(this, ConstHelper.Options);
         }

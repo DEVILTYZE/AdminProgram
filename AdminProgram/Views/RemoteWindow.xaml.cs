@@ -18,11 +18,12 @@ namespace AdminProgram.Views
         private readonly object _locker = new();
         private const int MaxAbsoluteLength = 65535;
 
-        public RemoteWindow(Host host, IPEndPoint ourIpEndPoint, MainWindow.ChangeStatusDelegate changeStatus)
+        public RemoteWindow(Host host, IPEndPoint ourIpEndPoint, MainWindow.ChangeStatusDelegate changeStatus, 
+            LogViewModel logModel)
         {
             InitializeComponent();
             _changeStatus = changeStatus;
-            _model = new RemoteViewModel(host, ourIpEndPoint);
+            _model = new RemoteViewModel(host, ourIpEndPoint, logModel);
             DataContext = _model;
             
             _model.ImageScreen = new BitmapImage(new Uri(_model.ImageSourcePath));
@@ -30,7 +31,11 @@ namespace AdminProgram.Views
             ScreenImage.SetBinding(Image.SourceProperty, binding);
         }
 
-        private void RemoteWindow_OnLoaded(object sender, RoutedEventArgs e) => _model.StartRemoteConnection();
+        private void RemoteWindow_OnLoaded(object sender, RoutedEventArgs e)
+        {
+            Title = $"Admin Program (подключено к {_model.Host.IpAddress})";
+            _model.StartRemoteConnection();
+        }
 
         private void RemoteWindow_OnClosed(object sender, EventArgs e)
         {
@@ -49,7 +54,8 @@ namespace AdminProgram.Views
             
             lock (_locker)
             {
-                _model.CurrentControlState.KeysQueue.Enqueue(((byte)code, (byte)e.KeyStates));
+                _model.CurrentControlState.KeysQueue.Enqueue((byte)code);
+                _model.CurrentControlState.StatesQueue.Enqueue((byte)e.KeyStates);
             }
         } 
         

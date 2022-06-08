@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using AdminProgram.Annotations;
+using AdminProgram.Helpers;
 using AdminProgram.Models;
 using CommandLib;
 using CommandLib.Commands;
@@ -28,6 +29,7 @@ namespace AdminProgram.ViewModels
     {
         public HostViewModel()
         {
+            LogModel = new LogViewModel();
             ScanTasks = new TaskList();
             RefreshTasks = new TaskList();
             _transferTasks = new TaskList();
@@ -40,12 +42,10 @@ namespace AdminProgram.ViewModels
             // Текущий хост.
             _currentHost = Dns.GetHostEntry(Dns.GetHostName());
 
-            // Находим остальные ПК в локальной сети и добавляем их в словарь.
-            foreach (var ipAddress in _currentHost.AddressList.Where(NetHelper.IsInLocalNetwork))
-                CreateMacAddressTable(ipAddress.ToString());
-
             SetPorts(CurrentIpAddress.ToString());
+            Scan();
             Refresh();
+            LogModel.AddLog("Запуск программы.", LogStatus.Info);
         }
 
         public void AddHost([NotNull] Host host)
@@ -82,6 +82,9 @@ namespace AdminProgram.ViewModels
 
             if (_hasDataBase)
                 _db.SaveChanges();
+
+            lock (LogModel.Locker)
+                LogModel.AddLog($"Добавлен {host.IpAddress}.", LogStatus.Info);
         }
 
         public void RemoveHost([NotNull] Host host)
@@ -98,6 +101,9 @@ namespace AdminProgram.ViewModels
             
             _db.Hosts.Remove(hostInDb);
             _db.SaveChanges();
+
+            lock (LogModel.Locker)
+                LogModel.AddLog($"Удалён {host.IpAddress}.", LogStatus.Info);
         }
 
         /// <summary>
@@ -108,8 +114,10 @@ namespace AdminProgram.ViewModels
         {
             if (_currentHost is null)
                 return false;
+
+            var addresses = GetMacAddressTable();
             
-            foreach (var ipAddress in _addresses)
+            foreach (var ipAddress in addresses)
                 ScanTasks.Add(Task.Run(() => AddHost(ipAddress)));
 
             ScanTasks.Wait();
@@ -197,14 +205,21 @@ namespace AdminProgram.ViewModels
                 // Получение открытого ключа после включения ПК.
                 var publicKey = NetHelper.GetPublicKeyOrDefault(endPoint, NetHelper.LoadTimeout);
 
-                if (publicKey.HasValue) 
+                if (publicKey.HasValue)
+                {
+                    lock (LogModel.Locker)
+                        LogModel.AddLog($"Включение {host.IpAddress}.", LogStatus.Send);
                     return;
+                }
                 
+                lock (LogModel.Locker)
+                    LogModel.AddLog($"{host.IpAddress} не включился.", LogStatus.Error);
                 host.Status = HostStatus.Off;
             }
             catch (Exception)
             {
-                // ignored
+                lock (LogModel.Locker)
+                    LogModel.AddLog($"При включении {host.IpAddress} получена ошибка сокета.", LogStatus.Error);
             }
             finally
             {
@@ -218,7 +233,7 @@ namespace AdminProgram.ViewModels
             ThreadPool.QueueUserWorkItem(Shutdown, SelectedHost);
         }
 
-        private static void Shutdown([CanBeNull] object obj)
+        private void Shutdown([CanBeNull] object obj)
         {
             var host = (Host)obj;
 
@@ -227,11 +242,14 @@ namespace AdminProgram.ViewModels
             
             var endPoint = new IPEndPoint(IPAddress.Parse(host.IpAddress), NetHelper.CommandPort);
             var publicKey = NetHelper.GetPublicKeyOrDefault(endPoint, NetHelper.Timeout);
-            TcpClient client = null;
+            var client = new TcpClient();
 
             try
             {
-                client = new TcpClient(host.IpAddress, NetHelper.CommandPort) { ReceiveTimeout = NetHelper.Timeout };
+                if (!NetHelper.Connect(ref client, host.IpAddress, NetHelper.CommandPort, NetHelper.Timeout, 5))
+                    return;
+                
+                client.ReceiveTimeout = NetHelper.Timeout;
                 
                 if (!publicKey.HasValue)
                 {
@@ -250,14 +268,24 @@ namespace AdminProgram.ViewModels
                 }
 
                 Refresh(host);
+                
+                lock (LogModel.Locker)
+                {
+                    if (host.Status == HostStatus.Off)
+                        LogModel.AddLog($"{host.IpAddress} не выключился.", LogStatus.Error);
+                    else
+                        LogModel.AddLog($"{host.IpAddress} успешно выключен.", LogStatus.Info);
+                }
             }
             catch (SocketException)
             {
-                // ignored
+                lock (LogModel.Locker)
+                    LogModel.AddLog($"При выключении {host.IpAddress} получена ошибка сокета.", LogStatus.Error);
             }
             finally
             {
-                client?.Close();
+                if (client is not null && client.Connected)
+                    client.Close();
             }
         }
 
@@ -280,17 +308,23 @@ namespace AdminProgram.ViewModels
             host.IsTransfers = true;
             var endPoint = new IPEndPoint(IPAddress.Parse(host.IpAddress), NetHelper.TransferCommandPort);
             var publicKey = NetHelper.GetPublicKeyOrDefault(endPoint, NetHelper.Timeout);
-            TcpClient client = null;
+            var client = new TcpClient();
 
             try
             {
-                client = new TcpClient(host.IpAddress, NetHelper.TransferCommandPort)
-                {
-                    ReceiveTimeout = NetHelper.Timeout
-                };
+                if (!NetHelper.Connect(ref client, host.IpAddress, NetHelper.TransferCommandPort, NetHelper.Timeout, 5))
+                    return;
+                
+                client.ReceiveTimeout = NetHelper.Timeout;
 
                 if (!publicKey.HasValue)
+                {
+                    lock (LogModel.Locker)
+                        LogModel.AddLog($"Передача файлов, {host.IpAddress}, не был получен открытый ключ.", 
+                            LogStatus.Error);
+                    
                     return;
+                }
 
                 var keys = RsaEngine.GetKeys();
                 var transferEndPoint = new IPEndPoint(CurrentIpAddress, NetHelper.TransferPort);
@@ -310,16 +344,29 @@ namespace AdminProgram.ViewModels
                 datagram = Datagram.FromBytes(bytes);
                 var result = CommandResult.FromBytes(datagram.GetData(keys[0]));
                 
-                if (result.Status == CommandResultStatus.Failed)
-                    host.IsTransfers = false;
+                lock (LogModel.Locker)
+                {
+                    if (result.Status == CommandResultStatus.Failed)
+                    {
+                        LogModel.AddLog($"Передача файлов, {host.IpAddress}, хост прислал неуспешный статус.",
+                            LogStatus.Error);
+                        host.IsTransfers = false;
+                    }
+                    else
+                        LogModel.AddLog($"Передача файлов, {host.IpAddress}, хост прислал успешный статус.",
+                            LogStatus.Receive);
+                }
+                // TODO: доделать логи...
             }
             catch (SocketException)
             {
-                // ignored
+                lock (LogModel.Locker)
+                    LogModel.AddLog($"При передаче файла {host.IpAddress} получена ошибка сокета.", LogStatus.Error);
             }
             finally
             {
-                client?.Close();
+                if (client is not null && client.Connected)
+                    client.Close();
             }
         }
 
@@ -337,7 +384,7 @@ namespace AdminProgram.ViewModels
             {
                 host.TransferServer = new TcpListener(endPoint);
                 host.TransferServer.Start();
-                
+
                 client = host.TransferServer.AcceptTcpClient();
                 client.Client.ReceiveTimeout = NetHelper.Timeout;
                 var mainLength = 0;
@@ -355,6 +402,10 @@ namespace AdminProgram.ViewModels
                     if (mainLength > NetHelper.MaxFileLength)
                     {
                         host.IsTransfers = false;
+                        
+                        lock (LogModel.Locker)
+                            LogModel.AddLog($"{host.IpAddress} передал файлы общим весом больше, чем возможно.", LogStatus.Error);
+                        
                         return;
                     }
 
@@ -372,9 +423,16 @@ namespace AdminProgram.ViewModels
                     namesList.Add(Encoding.UTF8.GetString(data.AsSpan()[4..(length + 4)]));
                     data = data.AsSpan()[(length + 4)..].ToArray();
                     responseList.Add(data);
+                    
+                    lock (LogModel.Locker)
+                        LogModel.AddLog($"{host.IpAddress} передал {i}-й из {countOfFiles} файлов.", LogStatus.Receive);
                 }
             }
-            catch (SocketException) { }
+            catch (SocketException)
+            {
+                lock (LogModel.Locker)
+                    LogModel.AddLog($"При передаче файла {host.IpAddress} получена ошибка сокета.", LogStatus.Error);
+            }
             finally
             {
                 client?.Close();
@@ -384,6 +442,10 @@ namespace AdminProgram.ViewModels
             if (responseList.Sum(bytes => bytes.Length) > NetHelper.MaxFileLength)
             {
                 host.IsTransfers = false;
+                
+                lock (LogModel.Locker)
+                    LogModel.AddLog($"{host.IpAddress} передал файлы общим весом больше, чем возможно.", LogStatus.Error);
+                
                 return;
             }
             
@@ -406,6 +468,9 @@ namespace AdminProgram.ViewModels
                 }
                 
                 File.WriteAllBytes(path, responseList[i]);
+                
+                lock (LogModel.Locker)
+                    LogModel.AddLog($"Новый файл от {host.IpAddress} по пути \"{path}\".", LogStatus.Info);
             }
 
             host.IsTransfers = false;
@@ -415,14 +480,15 @@ namespace AdminProgram.ViewModels
         {
             var endPoint = new IPEndPoint(IPAddress.Parse(SelectedHost.IpAddress), NetHelper.TransferCommandPort);
             var publicKey = NetHelper.GetPublicKeyOrDefault(endPoint, NetHelper.Timeout);
-            TcpClient client = null;
+            var client = new TcpClient();
+            var host = SelectedHost;
 
             try
             {
-                client = new TcpClient(SelectedHost.IpAddress, NetHelper.TransferCommandPort)
-                {
-                    ReceiveTimeout = NetHelper.Timeout
-                };
+                if (!NetHelper.Connect(ref client, host.IpAddress, NetHelper.TransferCommandPort, NetHelper.Timeout, 3))
+                    return;
+                
+                client.ReceiveTimeout = NetHelper.Timeout;
                 var keys = RsaEngine.GetKeys();
                 var command = new TransferCommand(null, keys[1]) { Type = CommandType.Abort };
                 var datagram = new Datagram(command.ToBytes(), typeof(TransferCommand), publicKey);
@@ -439,14 +505,21 @@ namespace AdminProgram.ViewModels
                 var result = CommandResult.FromBytes(datagram.GetData(keys[0]));
                 SelectedHost.IsTransfers = result.Status != CommandResultStatus.Successed;
                 SelectedHost.TransferServer?.Stop();
+                
+                lock (LogModel.Locker)
+                    LogModel.AddLog($"Передача файлов от {host.IpAddress} успешно отменена.", LogStatus.Info);
             }
             catch (SocketException)
             {
                 SelectedHost.IsTransfers = false;
+                
+                lock (LogModel.Locker)
+                    LogModel.AddLog($"При передаче файла {host.IpAddress} получена ошибка сокета.", LogStatus.Error);
             }
             finally
             {
-                client?.Close();
+                if (client is not null && client.Connected)
+                    client.Close();
             }
         }
 
@@ -459,34 +532,32 @@ namespace AdminProgram.ViewModels
 
         public IPEndPoint GetOurIpEndPoint() => new(CurrentIpAddress, NetHelper.CommandPort);
 
-        private void CreateMacAddressTable(string ipAddress)
+        private Dictionary<string, string> GetMacAddressTable()
         {
-            _addresses = new Dictionary<string, string>();
-            var arpProcess = Process.Start(new ProcessStartInfo("arp", $"-a -N \"{ipAddress}\"")
-            {
-                StandardOutputEncoding = Encoding.UTF8,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true
-            });
-
-            var cmdOutput = arpProcess?.StandardOutput.ReadToEnd();
-            
-            if (string.IsNullOrEmpty(cmdOutput))
-                return;
-            
-            var pattern = @$"({ipAddress.Split('.')[0]}\."
-                          + @"(\d{0,3}\.){2}\d{0,2}[0-4])\s+(([\da-f]{2}-){5}[\da-f][\da-e])";
-
-            foreach (Match match in Regex.Matches(cmdOutput, pattern))
-                _addresses.Add(match.Groups[1].Value, match.Groups[3].Value);
+            return (from ip in _currentHost.AddressList.Where(NetHelper.IsInLocalNetwork)
+                select ip.ToString() 
+                into ipAddress 
+                let arpProcess = Process.Start(new ProcessStartInfo("arp", $"-a -N \"{ipAddress}\"")
+                {
+                    StandardOutputEncoding = Encoding.UTF8, 
+                    UseShellExecute = false, 
+                    RedirectStandardOutput = true, 
+                    CreateNoWindow = true
+                }) 
+                let cmdOutput = arpProcess?.StandardOutput.ReadToEnd() 
+                where !string.IsNullOrEmpty(cmdOutput) 
+                let pattern = @$"({ipAddress.Split('.')[0]}\." 
+                              + @"(\d{0,3}\.){2}\d{0,2}[0-4])\s+(([\da-f]{2}-){5}[\da-f][\da-e])" 
+                from Match match in Regex.Matches(cmdOutput, pattern) 
+                select match).ToDictionary(match => match.Groups[1].Value, match => match.Groups[3].Value);
         }
         
-        private static void SetPorts(string ipAddress)
+        private void SetPorts(string ipAddress)
         {
             const string udpString = "UDP";
             const string tcpString = "TCP";
             const int countOfRepeat = 5;
+            var currentPort = 0;
             var ports = new[]
             {
                 NetHelper.CommandPort, NetHelper.RemoteStreamPort, NetHelper.RemoteControlPort, 
@@ -501,6 +572,9 @@ namespace AdminProgram.ViewModels
             {
                 for (var i = 0; i < ports.Length; ++i)
                 for (var j = 0; j < countOfRepeat; ++j)
+                {
+                    currentPort = ports[i];
+                    
                     if (NetHelper.SetPort(
                             ports[i],
                             ports[i],
@@ -511,10 +585,12 @@ namespace AdminProgram.ViewModels
                             0
                         ))
                         break;
+                }
             }
             catch (Exception)
             {
-                // ignored
+                lock (LogModel.Locker)
+                    LogModel.AddLog($"Порт {currentPort} не удалось открыть.", LogStatus.Error);
             }
         }
 
@@ -531,8 +607,7 @@ namespace AdminProgram.ViewModels
                 return false;
             }
 
-            Hosts = new ObservableCollection<Host>(_db.Hosts.Local//.Where(thisHost => thisHost.Id == 1)
-                .Select(thisHost => new Host(thisHost)));
+            Hosts = new ObservableCollection<Host>(_db.Hosts.Local.Select(thisHost => new Host(thisHost)));
             OnPropertyChanged(nameof(Hosts));
             
             return true;

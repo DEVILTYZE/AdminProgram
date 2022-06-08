@@ -43,8 +43,8 @@ namespace Tests.CommandLibTests
             for (var i = 0; i < bytes.Length; ++i)
                 bytes[i] = (byte)random.Next(byte.MinValue, byte.MaxValue + 1);
             
-            var compressedBytes = ByteHelper.ImagesXOrCompress(bytes);
-            var decompressedBytes = ByteHelper.ImagesXOrDecompress(compressedBytes);
+            var compressedBytes = ByteHelper.CompressArray(bytes);
+            var decompressedBytes = ByteHelper.DecompressArray(compressedBytes);
             
             Assert.AreEqual(bytes, decompressedBytes);
         }
@@ -66,14 +66,14 @@ namespace Tests.CommandLibTests
             var lowQualityImage = ReduceQuality(image);
             SavePic(lowQualityImage, 1);
             var bytesImage = ByteHelper.ImageToBytes(lowQualityImage);
-            bytesImage = ByteHelper.ImagesXOrCompress((byte[])bytesImage.Clone());
+            bytesImage = ByteHelper.CompressArray((byte[])bytesImage.Clone());
             
             var datagram = new Datagram(bytesImage, typeof(byte[]), keys[1]);
             var bytes = datagram.ToBytes();
             datagram = Datagram.FromBytes(bytes);
             bytesImage = datagram.GetData(keys[0]);
 
-            bytesImage = ByteHelper.ImagesXOrDecompress(bytesImage);
+            bytesImage = ByteHelper.DecompressArray(bytesImage);
             image = ByteHelper.BytesToImage(bytesImage);
             SavePic(image, 2);
             

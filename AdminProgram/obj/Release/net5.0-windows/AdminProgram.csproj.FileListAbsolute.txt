@@ -45,5 +45,4 @@ E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\obj\Release\net5.0-wi
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-windows\SharpCompress.dll
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\obj\Release\net5.0-windows\Views\AddHostWindow.g.cs
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\obj\Release\net5.0-windows\Views\AddHostWindow.baml
-E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\obj\Release\net5.0-windows\Views\TextBoxPlaceholder.baml
 E:\Disk D\ProjectsCode\C#\Diplom\AdminProgram\AdminProgram\bin\Release\net5.0-windows\WindowsInput.dll

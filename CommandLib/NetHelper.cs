@@ -26,7 +26,7 @@ namespace CommandLib
     {
         private static readonly string RequestPath = Environment.CurrentDirectory + "\\data\\request.apd";
         private static readonly string LocationPath = Environment.CurrentDirectory + "\\data\\location.apd";
-        private static readonly string[] LocalNetworks = { "192", "172", "10" };
+        private static readonly string[] LocalNetworks = { "192", "172", "127", "10" };
 
         public const int BufferSize = 256;
         public const int CommandPort = 51000; // TCP
@@ -86,15 +86,14 @@ namespace CommandLib
             var command = new MessageCommand(Array.Empty<byte>());
             var datagram = new Datagram(command.ToBytes(), typeof(MessageCommand));
             var bytes = datagram.ToBytes();
-            TcpClient client = null;
+            var client = new TcpClient();
 
             try
             {
-                client = new TcpClient(remoteIp.Address.ToString(), remoteIp.Port)
-                {
-                    ReceiveTimeout = receiveTimeout
-                };
-
+                if (!Connect(ref client, remoteIp.Address.ToString(), remoteIp.Port, receiveTimeout))
+                    return null;
+                    
+                client.ReceiveTimeout = receiveTimeout;
                 using var stream = client.GetStream();
                 stream.Write(bytes, 0, bytes.Length);
 
@@ -106,7 +105,8 @@ namespace CommandLib
             }
             finally
             {
-                client?.Close();
+                if (client is not null && client.Connected)
+                    client.Close();
             }
 
             var receivedDatagram = Datagram.FromBytes(bytes);
@@ -120,6 +120,27 @@ namespace CommandLib
 
         public static bool IsInLocalNetwork(IPAddress ipAddress) =>
             LocalNetworks.Any(localNetwork => ipAddress.ToString().StartsWith(localNetwork));
+
+        public static bool Connect(ref TcpClient client, string ipAddress, int port, int timeout = 0, int attempts = 1)
+        {
+            try
+            {
+                var result = false;
+                
+                for (var currentAttempt = 0; currentAttempt < attempts && !result; ++currentAttempt)
+                {
+                    var connectResult = client.BeginConnect(ipAddress, port, null, null);
+                    connectResult.AsyncWaitHandle.WaitOne(timeout);
+                    result = client.Connected;
+                }
+                
+                return result;
+            }
+            catch (SocketException)
+            {
+                return false;
+            }
+        }
 
         public static byte[] StreamRead(NetworkStream stream)
         {

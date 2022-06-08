@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using AdminProgram.Annotations;
 
-namespace AdminProgram.Models
+namespace AdminProgram.Helpers
 {
     public sealed class TaskList : INotifyPropertyChanged
     {

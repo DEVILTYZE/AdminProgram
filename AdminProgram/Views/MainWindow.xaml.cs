@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using AdminProgram.Helpers;
 using AdminProgram.Models;
 using AdminProgram.ViewModels;
 using CommandLib;
@@ -16,10 +17,6 @@ namespace AdminProgram.Views
     public partial class MainWindow
     {
         private readonly HostViewModel _model;
-        // private readonly Style _searchEmpty = Application.Current.FindResource("SearchEmpty") as Style;
-        // private readonly Style _searchNotEmpty = new()
-        //     { Setters = { new Setter { Property = ContentProperty, Value = string.Empty } } };
-
         private Task _task;
         
         public delegate void ChangeStatusDelegate(bool isEnabled);
@@ -36,17 +33,7 @@ namespace AdminProgram.Views
             
             ChangeRemoteStatus += ChangeRemoteButtonStatus;
             _model = (HostViewModel)DataContext;
-            Scan(_model);
         }
-        //
-        // private void SearchBox_OnTextChanged(object sender, TextChangedEventArgs e)
-        //     => SearchLabel.Style = SearchBox.Text.Length is 0 ? _searchEmpty : _searchNotEmpty;
-
-        // private void SearchLabel_OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        // {
-        //     if (e.ClickCount is 1)
-        //         Keyboard.Focus(((Label)sender).Target);
-        // }
 
         private void ScanButton_OnClick(object sender, RoutedEventArgs e) => Scan(_model);
 
@@ -76,7 +63,7 @@ namespace AdminProgram.Views
         }
 
         private void HostList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-            => RightPanel.Visibility = Visibility.Visible;
+            => RightPanel.Visibility = _model.SelectedHost is null ? Visibility.Hidden : Visibility.Visible;
         
         private void RefreshAllButton_OnClick(object sender, RoutedEventArgs e) => _model.Refresh();
         
@@ -108,7 +95,8 @@ namespace AdminProgram.Views
         private void RemoteButton_OnClick(object sender, RoutedEventArgs e)
         {
             ChangeRemoteStatus?.Invoke(false);
-            var remoteWindow = new RemoteWindow(_model.SelectedHost, _model.GetOurIpEndPoint(), ChangeRemoteStatus);
+            var remoteWindow = new RemoteWindow(_model.SelectedHost, _model.GetOurIpEndPoint(), ChangeRemoteStatus,
+                _model.LogModel);
             remoteWindow.Show();
         }
 
@@ -136,26 +124,35 @@ namespace AdminProgram.Views
 
         private void AddHostButton_OnClick(object sender, RoutedEventArgs e)
         {
-            var host = new Host("1", "0.0.0.0", "00-00-00-00-00-00");
+            var host = new Host("Безымянный", "0.0.0.0", "00-00-00-00-00-00");
             var addHostWindow = new AddHostWindow(ref host) { Owner = this };
             addHostWindow.ShowDialog();
             
-            if (host is not null)
+            if (string.CompareOrdinal(host.IpAddress, "0.0.0.0") != 0)
                 _model.AddHost(host);
         }
 
         private void SearchBox_OnTextChanged(object sender, TextChangedEventArgs e)
         {
-            var items = string.IsNullOrEmpty(SearchBox.Text)
-                ? _model.Hosts
-                : _model.Hosts.Where(host => host.ToString().ToLower().Contains(SearchBox.Text.ToLower()));
+            if (string.IsNullOrEmpty(SearchBox.Text) || string.IsNullOrWhiteSpace(SearchBox.Text))
+            {
+                HostsBox.ItemsSource = _model.Hosts;
+                
+                return;
+            }
+
+            var patternWords = SearchBox.Text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var items = _model.Hosts.ToList();
+            items = patternWords.Aggregate(items, (current, patternWord) 
+                => current.Intersect(current.Where(host 
+                    => host.ToString().ToLower().Contains(patternWord.ToLower()))).ToList());
             HostsBox.ItemsSource = items;
         }
 
         private void RemoveHostButton_OnClick(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show("Вы точно хотите удалить хост?", "Внимание", 
-                MessageBoxButton.YesNo, MessageBoxImage.Question);
+            var result = MessageBox.Show($"Вы точно хотите удалить {_model.SelectedHost.IpAddress}?", 
+                "Внимание", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (result != MessageBoxResult.Yes) 
                 return;
@@ -163,5 +160,30 @@ namespace AdminProgram.Views
             _model.RemoveHost(_model.SelectedHost);
             RightPanel.Visibility = Visibility.Hidden;
         }
+
+        private void ExportButton_OnClick(object sender, RoutedEventArgs e)
+        {
+            if (_model.LogModel.ExportLogs())
+                MessageBox.Show("Логи успешно экспортированы.", "Экспорт", MessageBoxButton.OK, 
+                    MessageBoxImage.Information);
+            else
+                MessageBox.Show("Логи не были экспортированы.", "Ошибка", MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+        }
+
+        private void ImportButton_OnClick(object sender, RoutedEventArgs e)
+        {
+            if (!DialogService.OpenFileDialog())
+                return;
+
+            if (_model.LogModel.ImportLogs(DialogService.FilePath))
+                MessageBox.Show("Логи успешно импортированы.", "Импорт", MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            else
+                MessageBox.Show("Логи не были импортированы.", "Ошибка", MessageBoxButton.OK, 
+                    MessageBoxImage.Error);
+        }
+
+        private void ClearLogsButton_OnClick(object sender, RoutedEventArgs e) => _model.LogModel.ClearLogs();
     }
 }

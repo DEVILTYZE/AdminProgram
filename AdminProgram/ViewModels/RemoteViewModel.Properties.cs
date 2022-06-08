@@ -16,7 +16,8 @@ namespace AdminProgram.ViewModels
         private readonly Host _host;
         private readonly RemoteControlObject _currentControlState;
         private readonly IPEndPoint _ourIpEndPoint;
-
+        private readonly LogViewModel _logModel;
+        
         private bool _reconnect, _isAliveRemoteConnection;
         private UdpClient _udpClient;
         private BitmapImage _imageScreen;

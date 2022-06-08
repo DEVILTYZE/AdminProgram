@@ -9,37 +9,6 @@ namespace CommandLib.Commands.Helpers
 {
     public static class ByteHelper
     {
-        public static byte[] ImagesXOrDecompress(byte[] imageByteArray)
-        {
-            return DecompressArray(imageByteArray);
-
-            // if (imageByteArray2 is null)
-            //     return imageByteArray;
-            //
-            // var firstBigger = imageByteArray.Length > imageByteArray2.Length;
-            // var bigArray = firstBigger ? imageByteArray : imageByteArray2;
-            // var smallArray = firstBigger ? imageByteArray2 : imageByteArray;
-            //
-            // for (var i = 0; i < smallArray.Length; ++i)
-            //     bigArray[i] ^= smallArray[i];
-            //
-            // return bigArray;
-        }
-        
-        public static byte[] ImagesXOrCompress(byte[] imageByteArray)
-        {
-            return CompressArray(imageByteArray);
-
-            // var firstBigger = imageByteArray.Length > imageByteArray2.Length;
-            // var bigArray = firstBigger ? imageByteArray : imageByteArray2;
-            // var smallArray = firstBigger ? imageByteArray2 : imageByteArray;
-            //
-            // for (var i = 0; i < smallArray.Length; ++i)
-            //     bigArray[i] ^= smallArray[i];
-            //
-            // return CompressArray(bigArray);
-        }
-
         public static byte[] ImageToBytes(Image image)
         {
             using var ms = new MemoryStream();
@@ -55,7 +24,7 @@ namespace CommandLib.Commands.Helpers
             return Image.FromStream(ms) as Bitmap;
         }
 
-        private static byte[] CompressArray(byte[] array)
+        public static byte[] CompressArray(byte[] array)
         {
             using var msInput = new MemoryStream(array);
             using var msOutput = new MemoryStream();
@@ -67,7 +36,7 @@ namespace CommandLib.Commands.Helpers
             return msOutput.ToArray();
         }
 
-        private static byte[] DecompressArray(byte[] array)
+        public static byte[] DecompressArray(byte[] array)
         {
             using var msInput = new MemoryStream(array);
             using var msOutput = new MemoryStream();

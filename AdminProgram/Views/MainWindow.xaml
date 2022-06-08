@@ -3,11 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:AdminProgram"
         xmlns:viewModels="clr-namespace:AdminProgram.ViewModels"
-        xmlns:helpers="clr-namespace:AdminProgram.Helpers"
         mc:Ignorable="d"
-        Title="MainWindow" MinHeight="550" MinWidth="1000" Height="800" Width="1500"
+        Title="Admin Program" 
+        MinHeight="650" MinWidth="1275" 
+        Height="800" Width="1500"
         KeyDown="MainWindow_OnKeyDown"
         Closed="MainWindow_OnClosed">
     <Window.DataContext>
@@ -18,122 +18,178 @@
         <Style TargetType="ListView" BasedOn="{StaticResource Window}">
             <Setter Property="Margin" Value="20 1 20 10" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{StaticResource SmokeWhite}" />
+            <Setter Property="BorderBrush" Value="Lavender" />
         </Style>
     </Window.Resources>
-    <Grid MinWidth="1000">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="0.1*" MinHeight="75" />
-            <RowDefinition />
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition />
-            <ColumnDefinition />
-            <ColumnDefinition />
-            <ColumnDefinition />
-        </Grid.ColumnDefinitions>
-        <Button x:Name="AddHostButton" 
-                Content="Добавить хост"
-                Click="AddHostButton_OnClick"/>
-        <Button Grid.Row="0" Grid.Column="1" 
-                x:Name="ScanButton"
-                Style="{StaticResource {x:Type Button}}"
-                Content="{Binding ScanTasks.IsAlive, 
-                Converter={StaticResource ScanButtonText}}"
-                IsEnabled="{Binding ScanTasks.IsAlive, 
-                Converter={StaticResource OppositeBool}}"
-                Click="ScanButton_OnClick"/>
-        <Button Grid.Row="0" Grid.Column="2" 
-                x:Name="RefreshAllButton"
-                Style="{StaticResource {x:Type Button}}"
-                Content="{Binding RefreshTasks.IsAlive, 
-                Converter={StaticResource RefreshButtonText}}"
-                IsEnabled="{Binding RefreshTasks.IsAlive, 
-                Converter={StaticResource OppositeBool}}"
-                Click="RefreshAllButton_OnClick"/>
-        <!-- <helpers:TextBoxPlaceholder Grid.Row="0" Grid.Column="3" -->
-        <!--                             x:Name="SearchBox"  -->
-        <!--                             Height="75" -->
-        <!--                             Width="400" -->
-        <!--                             Placeholder="Поиск" -->
-        <!--                             KeyDown="SearchBox_OnKeyDown"/> -->
-        <TextBox Grid.Row="0" Grid.Column="3"
-                 x:Name="SearchBox"
-                 Style="{StaticResource SearchBox}"
-                 TextChanged="SearchBox_OnTextChanged" />
-        <!-- <Label Grid.Row="0" Grid.Column="3"  -->
-        <!--        x:Name="SearchLabel" -->
-        <!--        Target="{x:Reference SearchBox}" -->
-        <!--        Style="{StaticResource SearchEmpty}" -->
-        <!--        Cursor="IBeam" -->
-        <!--        MouseLeftButtonUp="SearchLabel_OnMouseLeftButtonUp" /> -->
-        <ListBox x:Name="HostsBox"
-                 Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" 
-                 ItemsSource="{Binding Hosts}" 
-                 SelectedItem="{Binding SelectedHost}"
-                 Style="{StaticResource Window}"
-                 SelectionChanged="HostList_OnSelectionChanged"
-                 Margin="10">
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Style="{StaticResource HostPanel}" Text="{Binding Path=Name}" />
-                        <TextBlock Style="{StaticResource HostPanel}" Text="{Binding Path=IpAddress}" />
-                        <TextBlock Style="{StaticResource HostPanel}" Text="{Binding Path=MacAddress}" />
-                        <Ellipse Style="{StaticResource {x:Type Ellipse}}" 
-                                 Fill="{Binding Status, Converter={StaticResource EllipseColor}}" />
+    <TabControl>
+        <TabItem>
+            <TabItem.Header>
+                <TextBlock Style="{StaticResource FontSmall}">Список хостов</TextBlock>
+            </TabItem.Header>
+            <TabItem.Content>
+                <Grid HorizontalAlignment="Stretch">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="75" />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Button
+                            Content="Добавить хост"
+                            Click="AddHostButton_OnClick"/>
+                    <Button Grid.Row="0" Grid.Column="1" 
+                            x:Name="ScanButton"
+                            Style="{StaticResource {x:Type Button}}"
+                            Content="{Binding ScanTasks.IsAlive, 
+                            Converter={StaticResource ScanButtonText}}"
+                            IsEnabled="{Binding ScanTasks.IsAlive, 
+                            Converter={StaticResource OppositeBool}}"
+                            Click="ScanButton_OnClick"/>
+                    <Button Grid.Row="0" Grid.Column="2" 
+                            x:Name="RefreshAllButton"
+                            Style="{StaticResource {x:Type Button}}"
+                            Content="{Binding RefreshTasks.IsAlive, 
+                            Converter={StaticResource RefreshButtonText}}"
+                            IsEnabled="{Binding RefreshTasks.IsAlive, 
+                            Converter={StaticResource OppositeBool}}"
+                            Click="RefreshAllButton_OnClick"/>
+                    <DockPanel Grid.Row="0" Grid.Column="3">
+                        <Label Target="{x:Reference SearchBox}" 
+                               Content="Поиск:"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               DockPanel.Dock="Left"/>
+                        <TextBox x:Name="SearchBox"
+                                 Style="{StaticResource SearchBox}"
+                                 TextChanged="SearchBox_OnTextChanged" 
+                                 Cursor="IBeam"
+                                 HorizontalAlignment="Stretch" />
+                    </DockPanel>
+                    <ListBox x:Name="HostsBox"
+                             Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" 
+                             ItemsSource="{Binding Hosts}" 
+                             SelectedItem="{Binding SelectedHost}"
+                             Style="{StaticResource Window}"
+                             SelectionChanged="HostList_OnSelectionChanged"
+                             Margin="10">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource HostPanel}" Text="{Binding Path=Name}" />
+                                    <TextBlock Style="{StaticResource HostPanel}" Text="{Binding Path=IpAddress}" />
+                                    <TextBlock Style="{StaticResource HostPanel}" Text="{Binding Path=MacAddress}" />
+                                    <Ellipse Style="{StaticResource {x:Type Ellipse}}" 
+                                             Fill="{Binding Status, Converter={StaticResource EllipseColor}}" />
+                                    <TextBlock Style="{StaticResource HostPanel}" 
+                                               Text="{Binding Status, Converter={StaticResource StatusText}}" />
+                                </StackPanel> 
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <StackPanel Grid.Row="1" Grid.Column="3"
+                                x:Name="RightPanel" 
+                                Style="{StaticResource RightPanel}">
                         <TextBlock Style="{StaticResource HostPanel}" 
-                                   Text="{Binding Status, Converter={StaticResource StatusText}}" />
-                    </StackPanel> 
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
-        <StackPanel Grid.Row="1" Grid.Column="3"
-                    x:Name="RightPanel" 
-                    Style="{StaticResource RightPanel}"
-                    MinHeight="400" MinWidth="100">
-            <TextBlock Style="{StaticResource HostPanel}" 
-                       Text="{Binding Path=SelectedHost.Name, StringFormat='Имя: {0}'}" />
-            <TextBlock Style="{StaticResource HostPanel}" 
-                       Text="{Binding Path=SelectedHost.IpAddress, StringFormat='IP-адрес: {0}'}" />
-            <TextBlock Style="{StaticResource HostPanel}" 
-                       Text="{Binding Path=SelectedHost.MacAddress, StringFormat='MAC-адрес: {0}'}" />
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Style="{StaticResource HostPanel}" Text="Статус:" />
-                <Ellipse Style="{StaticResource {x:Type Ellipse}}" 
-                         Fill="{Binding SelectedHost.Status, 
-                         Converter={StaticResource EllipseColor}}" />
-                <TextBlock Style="{StaticResource HostPanel}" 
-                           Text="{Binding SelectedHost.Status, 
-                           Converter={StaticResource StatusText}}" />
-            </StackPanel>
-            <Button Style="{StaticResource {x:Type Button}}"
-                    Content="{Binding SelectedHost.Status, 
-                    Converter={StaticResource PowerOnButtonText}}"
-                    IsEnabled="{Binding SelectedHost.Status, 
-                    Converter={StaticResource StatusBoolPower}}"
-                    Click="PowerButton_OnClick" />
-            <Button Style="{StaticResource {x:Type Button}}"
-                    Content="Обновить статус"
-                    IsEnabled="{Binding SelectedHost.Status, 
-                    Converter={StaticResource StatusBoolPower}}"
-                    Click="RefreshButton_OnClick"/>
-            <Button x:Name="RemoveHostButton" Content="Удалить хост" Click="RemoveHostButton_OnClick" />
-            <StackPanel IsEnabled="{Binding SelectedHost.Status, 
-                        Converter={StaticResource StatusBool}}">
-                <!-- IsEnabled="{Binding SelectedHost.Status,  -->
-                <!-- Converter={StaticResource StatusBool}}" -->
-                <Button x:Name="RemoteButton"
-                        Style="{StaticResource {x:Type Button}}" 
-                        Content="Удалённое управление"
-                        Click="RemoteButton_OnClick"/>
-                <TextBox Style="{StaticResource TextBox}" 
-                         Text="{Binding TransferMessage}"
-                         Width="600"/>
-                <Button Content="{Binding SelectedHost.IsTransfers, 
-                        Converter={StaticResource TransferButtonText}}"
-                        Click="TransferButton_OnClick"/>
-            </StackPanel>
-        </StackPanel>
-    </Grid>
+                                   Text="{Binding Path=SelectedHost.Name, StringFormat='Имя: {0}'}" />
+                        <TextBlock Style="{StaticResource HostPanel}" 
+                                   Text="{Binding Path=SelectedHost.IpAddress, StringFormat='IP-адрес: {0}'}" />
+                        <TextBlock Style="{StaticResource HostPanel}" 
+                                   Text="{Binding Path=SelectedHost.MacAddress, StringFormat='MAC-адрес: {0}'}" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource HostPanel}" Text="Статус:" />
+                            <Ellipse Style="{StaticResource {x:Type Ellipse}}" 
+                                     Fill="{Binding SelectedHost.Status, 
+                                     Converter={StaticResource EllipseColor}}" />
+                            <TextBlock Style="{StaticResource HostPanel}" 
+                                       Text="{Binding SelectedHost.Status, 
+                                       Converter={StaticResource StatusText}}" />
+                        </StackPanel>
+                        <Button Style="{StaticResource {x:Type Button}}"
+                                Content="{Binding SelectedHost.Status, 
+                                Converter={StaticResource PowerOnButtonText}}"
+                                IsEnabled="{Binding SelectedHost.Status, 
+                                Converter={StaticResource StatusPowerBool}}"
+                                Click="PowerButton_OnClick" />
+                        <Button Style="{StaticResource {x:Type Button}}"
+                                Content="Обновить статус"
+                                IsEnabled="{Binding SelectedHost.Status, 
+                                Converter={StaticResource StatusRefreshBool}}"
+                                Click="RefreshButton_OnClick"/>
+                        <Button Content="Удалить хост" Click="RemoveHostButton_OnClick" />
+                        <StackPanel IsEnabled="{Binding SelectedHost.Status, 
+                                    Converter={StaticResource StatusBool}}">
+                            <Button x:Name="RemoteButton"
+                                    Style="{StaticResource {x:Type Button}}" 
+                                    Content="Удалённое управление"
+                                    Click="RemoteButton_OnClick"/>
+                            <TextBox Style="{StaticResource TextBox}" 
+                                     Text="{Binding TransferMessage}"
+                                     Cursor="IBeam" 
+                                     HorizontalAlignment="Stretch"/>
+                            <Button Content="{Binding SelectedHost.IsTransfers, 
+                                    Converter={StaticResource TransferButtonText}}"
+                                    Click="TransferButton_OnClick"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </TabItem.Content>
+        </TabItem>
+        <TabItem>
+            <TabItem.Header>
+                <TextBlock Style="{StaticResource FontSmall}">Логи</TextBlock>
+            </TabItem.Header>
+            <TabItem.Content>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="75" />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Button
+                            Content="Экспорт логов"
+                            Click="ExportButton_OnClick" 
+                            IsEnabled="{Binding LogModel.IsWorkingWithFiles, 
+                            Converter={StaticResource OppositeBool}}" />
+                    <Button Grid.Row="0" Grid.Column="1" 
+                            Content="Импорт логов"
+                            Click="ImportButton_OnClick" 
+                            IsEnabled="{Binding LogModel.IsWorkingWithFiles, 
+                            Converter={StaticResource OppositeBool}}" />
+                    <Button Grid.Row="0" Grid.Column="2"
+                            Content="Очистить логи"
+                            Click="ClearLogsButton_OnClick" 
+                            IsEnabled="{Binding LogModel.IsWorkingWithFiles, 
+                            Converter={StaticResource OppositeBool}}" />
+                    <DataGrid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                              Margin="10"
+                              AutoGenerateColumns="False" 
+                              HorizontalGridLinesBrush="DarkGray" 
+                              RowBackground="Azure" 
+                              AlternatingRowBackground="AliceBlue"
+                              ItemsSource="{Binding LogModel.Logs}"
+                              IsReadOnly="True"
+                              SelectionMode="Single"
+                              SelectionUnit="FullRow"
+                              Style="{StaticResource Font}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="75" 
+                                                SortDirection="Ascending" />
+                            <DataGridTextColumn Header="Время создания" Binding="{Binding CreationTime}" 
+                                                Width="225" />
+                            <DataGridTextColumn Header="Статус" Binding="{Binding Status}" Width="75" />
+                            <DataGridTextColumn Header="Сообщение" Binding="{Binding Text}" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem.Content>
+        </TabItem>
+    </TabControl>
 </Window>
